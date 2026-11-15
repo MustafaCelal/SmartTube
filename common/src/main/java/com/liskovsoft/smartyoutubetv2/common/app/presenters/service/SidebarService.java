@@ -263,6 +263,7 @@ public class SidebarService implements ProfileChangeListener {
                     MediaGroup.TYPE_NOTIFICATIONS,
                     MediaGroup.TYPE_PLAYBACK_QUEUE,
                     MediaGroup.TYPE_TRENDING,
+                    MediaGroup.TYPE_SHORTS, // HomeTube: Shorts hidden by default
                     MediaGroup.TYPE_BLOCKED_CHANNELS
             }));
         }

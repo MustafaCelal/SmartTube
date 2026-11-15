@@ -587,7 +587,7 @@ public class GeneralData implements ProfileChangeListener {
         mIsReturnToLauncherEnabled = Helpers.parseBoolean(split, 4, false);
         mBackgroundShortcut = Helpers.parseInt(split, 5, BACKGROUND_PLAYBACK_SHORTCUT_HOME_BACK);
         mOldPinnedItems = Helpers.parseList(split, 6, Video::fromString);
-        mIsHideShortsFromSubscriptionsEnabled = Helpers.parseBoolean(split, 7, false);
+        mIsHideShortsFromSubscriptionsEnabled = Helpers.parseBoolean(split, 7, true);
         mFastForwardRewindAction = Helpers.parseInt(split, 8, ACTION_UNDEFINED);
         //mScreenDimmingTimeoutMs = Helpers.parseInt(split, 9, 1);
         mIsProxyEnabled = Helpers.parseBoolean(split, 10, false);
@@ -604,8 +604,8 @@ public class GeneralData implements ProfileChangeListener {
         //mIsRemapChannelUpToSpeedEnabled = Helpers.parseBoolean(split, 21, false);
         //mIsRemapFastForwardToSpeedEnabled = Helpers.parseBoolean(split, 22, false);
         //mIsRemapChannelUpToSearchEnabled = Helpers.parseBoolean(split, 23, false);
-        mIsHideShortsFromHomeEnabled = Helpers.parseBoolean(split, 24, false);
-        mIsHideShortsFromHistoryEnabled = Helpers.parseBoolean(split, 25, false);
+        mIsHideShortsFromHomeEnabled = Helpers.parseBoolean(split, 24, true);
+        mIsHideShortsFromHistoryEnabled = Helpers.parseBoolean(split, 25, true);
         mIsScreensaverDisabled = Helpers.parseBoolean(split, 26, true);
         mIsVPNEnabled = Helpers.parseBoolean(split, 27, false);
         mLastPlaylistTitle = Helpers.parseStr(split, 28);

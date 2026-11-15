@@ -718,6 +718,11 @@ public class PlayerData extends DataChangeBase implements PlayerConstants, Profi
     }
 
     public FormatItem getDefaultVideoFormat() {
+        // HomeTube: low-memory TV, always start with 720p AVC (user can still change it in settings)
+        if (true) {
+            return FormatItem.VIDEO_HD_AVC_30;
+        }
+
         FormatItem formatItem = mDefaultVideoFormats.get(Build.MODEL);
 
         if (formatItem == null) {

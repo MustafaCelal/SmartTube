@@ -1,0 +1,9 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string translatable="false" name="app_name"><![CDATA[HomeTube]]></string>
+    <string translatable="false" name="browse_title"><![CDATA[HomeTube]]></string>
+    <!-- leanbackassistant overrides: search provider must match this flavor's applicationId -->
+    <string translatable="false" name="search_label">HomeTube</string>
+    <string translatable="false" name="settings_description">HomeTube Videos</string>
+    <string translatable="false" name="search_authority">io.github.mustafacelal.hometube.search_provider</string>
+</resources>

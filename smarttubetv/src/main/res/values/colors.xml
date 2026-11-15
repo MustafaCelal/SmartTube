@@ -41,6 +41,11 @@
     <color name="scheme_red_background_dark">@color/dark_red</color>
     <color name="scheme_red_shelf_background_dark">#131313</color>
     <color name="scheme_red_card_background_dark">#36474f</color>
+    <!-- HomeTube: YouTube TV-like palette -->
+    <color name="scheme_hometube_background">#0F0F0F</color>
+    <color name="scheme_hometube_sidebar">#0F0F0F</color>
+    <color name="scheme_hometube_card_background">#272727</color>
+    <color name="scheme_hometube_accent">#FF0033</color>
 
     <!-- Blue color scheme -->
     <color name="scheme_blue_background">#33B5E5</color>

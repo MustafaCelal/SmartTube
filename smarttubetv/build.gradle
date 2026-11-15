@@ -167,6 +167,13 @@ android {
             applicationId "org.smarttube.stable"
             targetSdkVersion project.properties.compileSdkVersion
         }
+        sthome {
+            // HomeTube: personal build, installs side by side with the official app
+            applicationId "io.github.mustafacelal.hometube"
+            targetSdkVersion project.properties.compileSdkVersion
+            // Library modules: use F-Droid variant (no update urls, no Firebase)
+            matchingFallbacks = ["stfdroid"]
+        }
         stfdroid {
             applicationId "app.smarttube.fdroid"
             minSdkVersion 21

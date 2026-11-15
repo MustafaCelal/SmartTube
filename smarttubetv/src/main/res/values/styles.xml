@@ -168,6 +168,33 @@
     </style>
     <!--  End Color scheme: Red -->
 
+    <!--  Color scheme: HomeTube (YouTube TV-like) -->
+    <style name="App.Theme.HomeTube.Player" parent="App.Theme.Leanback.Player">
+        <item name="playbackProgressPrimaryColor">@color/scheme_hometube_accent</item>
+        <item name="playbackProgressSecondaryColor">@color/light_red</item>
+        <item name="playbackControlsIconHighlightColor">@color/scheme_hometube_accent</item>
+        <item name="cardProgressStyle">@style/ProgressBarHorizontal.Dark</item>
+        <item name="shelfBackground">@color/scheme_hometube_background</item>
+        <item name="cardDefaultBackground">@color/scheme_hometube_card_background</item>
+        <item name="cardSelectedBackground">@color/card_selected_background_white</item>
+        <item name="android:colorAccent" tools:targetApi="21">@color/scheme_hometube_accent</item>
+    </style>
+    <style name="App.Theme.HomeTube.Browse" parent="App.Theme.Leanback.Browse">
+        <item name="android:windowBackground">@color/scheme_hometube_background</item>
+        <item name="brandColor">@color/scheme_hometube_sidebar</item>
+        <item name="brandAccentColor">@color/scheme_hometube_accent</item>
+        <item name="cardProgressStyle">@style/ProgressBarHorizontal.Dark</item>
+        <item name="shelfBackground">@color/scheme_hometube_background</item>
+        <item name="cardDefaultBackground">@color/scheme_hometube_card_background</item>
+        <item name="cardSelectedBackground">@color/card_selected_background_white</item>
+        <item name="appLogo">@mipmap/app_logo_semi_red</item>
+    </style>
+    <style name="App.Theme.HomeTube.Preferences" parent="App.Theme.Leanback.Preferences">
+        <item name="android:colorPrimary" tools:targetApi="21">@color/scheme_hometube_background</item>
+        <item name="android:colorAccent" tools:targetApi="21">@color/scheme_hometube_accent</item>
+    </style>
+    <!--  End Color scheme: HomeTube -->
+
     <!--  Color scheme: Dark Grey (OLED)  -->
     <style name="App.Theme.DarkGrey.OLED.Browse" parent="App.Theme.DarkGrey.Browse">
         <item name="brandAccentColor">@color/semi_transparent</item>
