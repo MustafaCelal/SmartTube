@@ -23,6 +23,7 @@ import com.liskovsoft.smartyoutubetv2.common.misc.CrashRestorer;
 import com.liskovsoft.smartyoutubetv2.common.prefs.SearchData;
 import com.liskovsoft.smartyoutubetv2.tv.adapter.VideoGroupObjectAdapter;
 import com.liskovsoft.smartyoutubetv2.tv.presenter.ShortsCardPresenter;
+import com.liskovsoft.smartyoutubetv2.tv.presenter.RowVideoCardPresenter;
 import com.liskovsoft.smartyoutubetv2.tv.presenter.VideoCardPresenter;
 import com.liskovsoft.smartyoutubetv2.tv.presenter.base.OnItemLongPressedListener;
 import com.liskovsoft.smartyoutubetv2.tv.ui.common.LeanbackActivity;
@@ -57,7 +58,7 @@ public class SearchTagsFragment extends SearchTagsFragmentBase {
         mIsFragmentCreated = true;
         mSearchPresenter = SearchPresenter.instance(getContext());
         mSearchPresenter.setView(this);
-        mCardPresenter = new VideoCardPresenter();
+        mCardPresenter = new RowVideoCardPresenter(); // HomeTube: bigger cards in rows
         mShortsPresenter = new ShortsCardPresenter();
         mSearchGroupAdapters = new HashMap<>();
         mSearchData = SearchData.instance(getContext());

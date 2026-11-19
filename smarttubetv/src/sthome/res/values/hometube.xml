@@ -14,7 +14,7 @@
     <!-- HomeTube: no title bar above the rows (Search/Account are in the rail) -->
     <dimen name="lb_browse_rows_margin_top">56dp</dimen>
     <!-- HomeTube: YouTube TV-like focus: bigger zoom -->
-    <item name="lb_focus_zoom_factor_small" type="fraction">114%</item>
+    <item name="lb_focus_zoom_factor_small" type="fraction">106%</item>
     <dimen name="hometube_player_dock_gap">8dp</dimen>
 
     <!-- HomeTube: narrow YouTube TV-like sidebar (icons hug the left edge, smaller expanded menu) -->
@@ -28,4 +28,16 @@
 
     <!-- HomeTube: empty/error screens use the same background as the rail (no two-tone look) -->
     <color name="lb_error_background_color_translucent">#F20F0F0F</color>
+    <!-- HomeTube: bigger cards in rows (Home, search), more air between cards -->
+    <dimen name="hometube_row_card_width">300dp</dimen>
+    <dimen name="grid_item_horizontal_spacing">24dp</dimen>
+    <dimen name="grid_item_vertical_spacing">28dp</dimen>
+    <!-- HomeTube: row titles brighter and medium weight -->
+    <style name="TextAppearance.Leanback.Row.Header" parent="TextAppearance.Leanback.Header">
+        <item name="android:textColor">#F1F1F1</item>
+        <item name="android:fontFamily">sans-serif-medium</item>
+        <item name="android:textSize">20sp</item>
+    </style>
+    <!-- HomeTube: start screen color (Android 12+) -->
+    <item name="app_start_color" type="color">@color/scheme_hometube_background</item>
 </resources>

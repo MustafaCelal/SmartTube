@@ -5,6 +5,8 @@ import android.content.Context;
 import android.graphics.Bitmap;
 import android.graphics.Outline;
 import android.graphics.drawable.Drawable;
+import android.graphics.Typeface;
+import android.util.TypedValue;
 import android.os.Build.VERSION;
 import android.util.Pair;
 import android.view.View;
@@ -106,6 +108,7 @@ public class VideoCardPresenter extends LongClickPresenter {
         //    cardView.setForeground(ContextCompat.getDrawable(context, R.drawable.lb_card_outline));
         //}
         applyFocusOutline(cardView);
+        applyHomeTubeText(cardView);
         updateCardBackgroundColor(cardView, false);
         return new ViewHolder(cardView);
     }
@@ -138,6 +141,80 @@ public class VideoCardPresenter extends LongClickPresenter {
             focusOutline.setAlpha(0);
             imageWrapper.setForeground(focusOutline);
         }
+    }
+
+    /**
+     * HomeTube: text flush with the thumbnail, title takes only the lines it needs (no empty line),
+     * meta info right under it on max two lines (channel / views and date).
+     */
+    private void applyHomeTubeText(ComplexImageCardView cardView) {
+        if (!mHasSecondaryTextColor) {
+            return;
+        }
+
+        float density = cardView.getResources().getDisplayMetrics().density;
+
+        // Grey placeholder (same as the loading skeleton) until the thumbnail arrives, not a black box
+        View mainImage = cardView.findViewById(R.id.main_image);
+        if (mainImage != null) {
+            mainImage.setBackgroundColor(0xFF1E1E1E);
+        }
+
+        View infoField = cardView.findViewById(R.id.info_field);
+        if (infoField != null) {
+            infoField.setPadding(0, (int) (10 * density), 0, (int) (6 * density));
+        }
+
+        TextView titleText = cardView.findViewById(R.id.title_text);
+        if (titleText != null) {
+            titleText.setMinLines(1);
+            titleText.setMaxLines(2);
+            titleText.setTypeface(Typeface.create("sans-serif-medium", Typeface.NORMAL));
+            titleText.setTextSize(TypedValue.COMPLEX_UNIT_SP, 16);
+            titleText.setLineSpacing(2 * density, 1f);
+            setStartMargin(titleText, 0);
+        }
+
+        TextView contentText = cardView.findViewById(R.id.content_text);
+        if (contentText != null) {
+            contentText.setMinLines(1);
+            contentText.setMaxLines(2);
+            contentText.setTextSize(TypedValue.COMPLEX_UNIT_SP, 13);
+            contentText.setLineSpacing(2 * density, 1f);
+            setStartMargin(contentText, 0);
+            ViewGroup.LayoutParams lp = contentText.getLayoutParams();
+            if (lp instanceof ViewGroup.MarginLayoutParams) {
+                ((ViewGroup.MarginLayoutParams) lp).topMargin = (int) (4 * density);
+                contentText.setLayoutParams(lp);
+            }
+        }
+    }
+
+    private static void setStartMargin(View view, int margin) {
+        ViewGroup.LayoutParams lp = view.getLayoutParams();
+        if (lp instanceof ViewGroup.MarginLayoutParams) {
+            ((ViewGroup.MarginLayoutParams) lp).leftMargin = margin;
+            ((ViewGroup.MarginLayoutParams) lp).setMarginStart(margin);
+            view.setLayoutParams(lp);
+        }
+    }
+
+    /**
+     * HomeTube: "Channel • views • date" -> channel on the first line, the rest on the second
+     */
+    private CharSequence formatContent(CharSequence content) {
+        if (!mHasSecondaryTextColor || content == null) {
+            return content;
+        }
+
+        int separator = content.toString().indexOf(" • ");
+        if (separator <= 0) {
+            return content;
+        }
+
+        android.text.SpannableStringBuilder result = new android.text.SpannableStringBuilder(content); // keep styling
+        result.replace(separator, separator + 3, "\n");
+        return result;
     }
 
     private void updateCardBackgroundColor(ComplexImageCardView view, boolean selected) {
@@ -182,7 +259,7 @@ public class VideoCardPresenter extends LongClickPresenter {
         Context context = cardView.getContext();
 
         cardView.setTitleText(video.getTitle());
-        cardView.setContentText(video.getSecondTitle());
+        cardView.setContentText(formatContent(video.getSecondTitle()));
         // Count progress that very close to zero. E.g. when user closed video immediately.
         cardView.setProgress(video.percentWatched > 0 && video.percentWatched < 1 ? 1 : Math.round(video.percentWatched));
         cardView.setBadgeText(

@@ -31,6 +31,19 @@ public final class ProgressBarManager {
     boolean mUserProvidedProgressBar;
     boolean mIsShowing;
     private int mPosition = Gravity.CENTER;
+    private PlaceholderProvider mPlaceholderProvider;
+
+    /**
+     * HomeTube: a page shaped placeholder (skeleton) instead of the spinner while the page is empty
+     */
+    public interface PlaceholderProvider {
+        boolean isPlaceholderWanted();
+        View createPlaceholder(ViewGroup rootView);
+    }
+
+    public void setPlaceholderProvider(PlaceholderProvider provider) {
+        mPlaceholderProvider = provider;
+    }
 
     private final Runnable showRunnable = new Runnable() {
         @Override
@@ -40,6 +53,9 @@ public final class ProgressBarManager {
             }
 
             if (mIsShowing) {
+                if (mProgressBarView == null && mPlaceholderProvider != null && mPlaceholderProvider.isPlaceholderWanted()) {
+                    mProgressBarView = mPlaceholderProvider.createPlaceholder(rootView);
+                }
                 if (mProgressBarView == null) {
                     mProgressBarView = createProgressBar(rootView, mPosition);
                 } else if (mUserProvidedProgressBar) {
@@ -95,7 +111,8 @@ public final class ProgressBarManager {
         if (mEnableProgressBar) {
             mIsShowing = true;
             Utils.removeCallbacks(hideRunnable);
-            Utils.postDelayed(showRunnable, System.currentTimeMillis() - mHideTimeMs > HIDE_DELAY_MS ? SHOW_DELAY_MS : 0);
+            boolean isPlaceholder = mPlaceholderProvider != null && mPlaceholderProvider.isPlaceholderWanted();
+            Utils.postDelayed(showRunnable, isPlaceholder || System.currentTimeMillis() - mHideTimeMs <= HIDE_DELAY_MS ? 0 : SHOW_DELAY_MS);
         }
     }
 

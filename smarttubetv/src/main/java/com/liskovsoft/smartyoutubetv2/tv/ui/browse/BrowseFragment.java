@@ -1,5 +1,8 @@
 package com.liskovsoft.smartyoutubetv2.tv.ui.browse;
 
+import android.content.Context;
+import com.liskovsoft.smartyoutubetv2.common.prefs.MainUIData;
+import com.liskovsoft.smartyoutubetv2.tv.ui.widgets.SkeletonView;
 import android.graphics.drawable.Drawable;
 import android.os.Bundle;
 import android.os.Handler;
@@ -101,8 +104,42 @@ public class BrowseFragment extends BrowseSupportFragment implements BrowseView 
         View root = super.onCreateView(inflater, container, savedInstanceState);
 
         mProgressBarManager.setRootView((ViewGroup) root);
+        setupSkeleton();
 
         return root;
+    }
+
+    /**
+     * HomeTube: page shaped placeholder instead of the spinner while the page is empty
+     */
+    private void setupSkeleton() {
+        android.util.TypedValue railWidth = new android.util.TypedValue();
+        if (getContext() == null || !getContext().getTheme().resolveAttribute(R.attr.browseCollapsedHeadersWidth, railWidth, true)) {
+            return;
+        }
+
+        mProgressBarManager.setPlaceholderProvider(new ProgressBarManager.PlaceholderProvider() {
+            @Override
+            public boolean isPlaceholderWanted() {
+                return isEmpty();
+            }
+
+            @Override
+            public View createPlaceholder(ViewGroup rootView) {
+                Context context = rootView.getContext();
+                float density = context.getResources().getDisplayMetrics().density;
+                int rail = (int) railWidth.getDimension(context.getResources().getDisplayMetrics());
+                android.util.TypedValue padding = new android.util.TypedValue();
+                int paddingStart = context.getTheme().resolveAttribute(R.attr.browsePaddingStart, padding, true) ?
+                        (int) padding.getDimension(context.getResources().getDisplayMetrics()) : (int) (28 * density);
+                int cardWidth = (int) (context.getResources().getDimensionPixelSize(R.dimen.hometube_row_card_width) *
+                        MainUIData.instance(context).getVideoGridScale());
+                int gap = context.getResources().getDimensionPixelSize(R.dimen.grid_item_horizontal_spacing);
+                SkeletonView skeleton = new SkeletonView(context, rail + paddingStart, (int) (60 * density), cardWidth, gap);
+                rootView.addView(skeleton, new ViewGroup.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.MATCH_PARENT));
+                return skeleton;
+            }
+        });
     }
 
     @Override

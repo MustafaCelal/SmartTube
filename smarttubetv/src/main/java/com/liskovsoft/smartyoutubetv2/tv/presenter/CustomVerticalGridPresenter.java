@@ -45,4 +45,14 @@ public class CustomVerticalGridPresenter extends VerticalGridPresenter {
 
         return viewHolder;
     }
+
+    @Override
+    protected void initializeGridViewHolder(ViewHolder vh) {
+        android.util.TypedValue value = new android.util.TypedValue();
+        if (vh.view.getContext().getTheme().resolveAttribute(com.liskovsoft.smartyoutubetv2.tv.R.attr.browseCollapsedHeadersWidth, value, true)) {
+            setShadowEnabled(false); // HomeTube: flat cards, no dark box around the focused one
+        }
+
+        super.initializeGridViewHolder(vh);
+    }
 }

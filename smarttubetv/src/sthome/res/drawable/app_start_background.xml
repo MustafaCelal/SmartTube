@@ -1,0 +1,10 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- HomeTube: shown right away when the app starts, instead of a black screen -->
+<layer-list xmlns:android="http://schemas.android.com/apk/res/android">
+    <item android:drawable="@color/scheme_hometube_background" />
+    <item>
+        <bitmap
+            android:gravity="center"
+            android:src="@mipmap/app_icon" />
+    </item>
+</layer-list>

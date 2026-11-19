@@ -15,11 +15,16 @@ public class CustomListRowPresenter extends ListRowPresenter {
 
     @Override
     protected void initializeRowViewHolder(RowPresenter.ViewHolder holder) {
+        TypedValue railWidth = new TypedValue();
+        boolean isHomeTube = holder.view.getContext().getTheme().resolveAttribute(R.attr.browseCollapsedHeadersWidth, railWidth, true);
+        if (isHomeTube) {
+            setShadowEnabled(false); // HomeTube: flat cards, no dark box around the focused one
+        }
+
         super.initializeRowViewHolder(holder);
 
         // HomeTube: cards scrolled to the left fade out next to the sidebar rail instead of being cut off
-        TypedValue railWidth = new TypedValue();
-        if (holder.view.getContext().getTheme().resolveAttribute(R.attr.browseCollapsedHeadersWidth, railWidth, true)) {
+        if (isHomeTube) {
             HorizontalGridView gridView = ((ListRowPresenter.ViewHolder) holder).getGridView();
             int fadeLength = gridView.getPaddingStart();
             if (fadeLength > 0) {

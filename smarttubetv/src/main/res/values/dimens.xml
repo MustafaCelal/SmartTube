@@ -136,4 +136,9 @@
     <dimen name="tooltip_vertical_padding_mod">6.5dp</dimen>
     <dimen name="tooltip_y_offset_non_touch_mod">0dp</dimen>
     <dimen name="tooltip_y_offset_touch_mod">16dp</dimen>
+    <dimen name="hometube_row_card_width">200dp</dimen>
+    <!-- Window background while the app starts (HomeTube flavor shows its logo) -->
+    <item name="app_start_background" type="drawable">@color/shelf_background_dark</item>
+    <item name="app_start_color" type="color">@color/shelf_background_dark</item>
+    <item name="app_start_icon" type="drawable">@mipmap/app_icon</item>
 </resources>

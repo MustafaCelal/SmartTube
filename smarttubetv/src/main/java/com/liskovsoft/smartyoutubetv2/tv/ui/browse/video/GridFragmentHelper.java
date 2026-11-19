@@ -78,14 +78,19 @@ public class GridFragmentHelper {
             displayWidthPx = Math.max(displayMetrics.widthPixels, displayMetrics.heightPixels);
         }
 
-        // HomeTube: the collapsed sidebar rail takes space on the left
+        float cardWidthPx = res.getDimensionPixelSize(cardWidthResId) * cardScale;
+        float cardSpacingPx = res.getDimensionPixelSize(R.dimen.grid_item_horizontal_spacing);
+
+        // HomeTube: the collapsed sidebar rail takes space on the left, the grid has the real side paddings
         android.util.TypedValue railWidth = new android.util.TypedValue();
         if (context.getTheme().resolveAttribute(R.attr.browseCollapsedHeadersWidth, railWidth, true)) {
             displayWidthPx -= (int) railWidth.getDimension(res.getDisplayMetrics());
+            android.util.TypedValue padding = new android.util.TypedValue();
+            float sidePaddingPx = context.getTheme().resolveAttribute(R.attr.browsePaddingStart, padding, true) ?
+                    padding.getDimension(res.getDisplayMetrics()) : 0;
+            // spacing is added after every card, the last one doesn't need it
+            return (displayWidthPx * uiScale - sidePaddingPx * 2 + cardSpacingPx) / (cardWidthPx + cardSpacingPx);
         }
-
-        float cardWidthPx = res.getDimensionPixelSize(cardWidthResId) * cardScale;
-        float cardSpacingPx = res.getDimensionPixelSize(R.dimen.grid_item_horizontal_spacing);
 
         // Get into consideration space from grid sides
         return (displayWidthPx - displayWidthPx * 0.1f * uiScale) / (cardWidthPx + cardSpacingPx);
