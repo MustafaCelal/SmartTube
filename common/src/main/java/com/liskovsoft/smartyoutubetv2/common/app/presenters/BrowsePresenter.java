@@ -1071,10 +1071,19 @@ public class BrowsePresenter extends BasePresenter<BrowseView> implements Sectio
      * HomeTube: Search opens as soon as it gets focus in the rail (no extra OK press), like YouTube
      */
     public boolean onRailSectionFocused(int sectionId) {
-        return sectionId == RAIL_SEARCH_ID && onRailSectionClicked(sectionId);
+        if (sectionId == RAIL_SEARCH_ID && getView() != null) {
+            getView().showInlineSearch(); // the current page stays as is
+            return true;
+        }
+
+        return false;
     }
 
     public boolean onRailSectionClicked(int sectionId) {
+        if (onRailSectionFocused(sectionId)) {
+            return true;
+        }
+
         for (BrowseSection section : getRailSections()) {
             if (section.getId() == sectionId && section.getData() instanceof ErrorFragmentData) {
                 // Go back to the previous section, so Back from Search/Accounts lands there (not on the rail item)

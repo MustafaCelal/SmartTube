@@ -23,6 +23,7 @@ import androidx.leanback.widget.ListRowPresenter;
 import androidx.leanback.widget.PageRow;
 import androidx.leanback.widget.Presenter;
 import androidx.leanback.widget.PresenterSelector;
+import androidx.leanback.widget.Row;
 import androidx.leanback.widget.TitleHelper;
 import com.liskovsoft.sharedutils.helpers.Helpers;
 import com.liskovsoft.smartyoutubetv2.common.app.models.data.BrowseSection;
@@ -50,7 +51,7 @@ import java.util.Map;
  */
 public class BrowseFragment extends BrowseSupportFragment implements BrowseView {
     private boolean mIsRailMode; // HomeTube
-    private int mPrevHeaderId = Integer.MIN_VALUE; // HomeTube: detect a real move onto the Search item
+    private int mLastRailPosition = -1; // HomeTube: previous sidebar item, to detect a real move onto Search
     private static final String TAG = BrowseFragment.class.getSimpleName();
     private ArrayObjectAdapter mSectionRowAdapter;
     private BrowsePresenter mBrowsePresenter;
@@ -163,15 +164,6 @@ public class BrowseFragment extends BrowseSupportFragment implements BrowseView 
     private void setupFragmentFactory() {
         mSectionFragmentFactory = new BrowseSectionFragmentFactory(
                 (row) -> {
-                    int headerId = getSelectedHeaderId();
-                    // Only when the user moved onto Search from another item (not the initial selection while loading)
-                    boolean isMovedByUser = mPrevHeaderId != Integer.MIN_VALUE && mPrevHeaderId != headerId;
-                    mPrevHeaderId = headerId;
-                    if (mIsRailMode && isMovedByUser && isShowingHeaders() && getView() != null) {
-                        if (mBrowsePresenter.onRailSectionFocused(headerId)) {
-                            return; // HomeTube: Search item opens the search field right away
-                        }
-                    }
                     focusOnContentIfNeeded();
                     mBrowsePresenter.onSectionFocused(getSelectedHeaderId());
                     highlightCurrentRailItem();
@@ -294,7 +286,27 @@ public class BrowseFragment extends BrowseSupportFragment implements BrowseView 
 
     @Override
     public void showInlineSearch() {
-        InlineSearchDialog.show(getActivity());
+        // When closed, the sidebar goes back to the page that is shown (like YouTube)
+        InlineSearchDialog.show(getActivity(), this::restoreHeadersSelection);
+    }
+
+    /**
+     * HomeTube: Search opens right away when the sidebar moves onto it. The page below doesn't change.
+     */
+    @Override
+    protected boolean onHeaderActionSelected(Row row, int position) {
+        if (!mIsRailMode || row == null || row.getHeaderItem() == null) {
+            return false;
+        }
+
+        // Only when the user moved onto it from another sidebar item (not the initial selection while loading)
+        int prevPosition = mLastRailPosition;
+        mLastRailPosition = position;
+        if (prevPosition == -1 || prevPosition == position || position == getMainSelectedPosition()) {
+            return false;
+        }
+
+        return mBrowsePresenter.onRailSectionFocused((int) row.getHeaderItem().getId());
     }
 
     private int getSelectedHeaderId() {

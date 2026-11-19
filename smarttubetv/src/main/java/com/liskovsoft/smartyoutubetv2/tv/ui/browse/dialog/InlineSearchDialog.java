@@ -47,6 +47,13 @@ public final class InlineSearchDialog {
     }
 
     public static void show(Context context) {
+        show(context, null);
+    }
+
+    /**
+     * @param onClosed called when the field is closed (with or without a search)
+     */
+    public static void show(Context context, Runnable onClosed) {
         if (context == null || sIsShowing) {
             return;
         }
@@ -183,6 +190,9 @@ public final class InlineSearchDialog {
         dialog.setOnDismissListener(d -> {
             sIsShowing = false;
             handler.removeCallbacks(loadTags);
+            if (onClosed != null) {
+                onClosed.run();
+            }
         });
 
         sIsShowing = true;

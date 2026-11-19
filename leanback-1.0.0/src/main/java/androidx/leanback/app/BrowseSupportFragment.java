@@ -1582,10 +1582,37 @@ public class BrowseSupportFragment extends BaseSupportFragment {
             // Layout of Headers Fragment in hidden state may triggers the onRowSelected and
             // reset to 0. Skip in that case.
             if (mShowingHeaders) {
+                if (onHeaderActionSelected(row, position)) {
+                    return; // MOD (HomeTube): action item, keep the current page
+                }
                 onRowSelected(position);
             }
         }
     };
+
+    /**
+     * MOD (HomeTube): lets a sidebar item run an action (e.g. open search) instead of replacing the page.
+     * @return true if handled, the current page stays
+     */
+    protected boolean onHeaderActionSelected(Row row, int position) {
+        return false;
+    }
+
+    /**
+     * MOD (HomeTube): position of the page that is currently shown
+     */
+    protected int getMainSelectedPosition() {
+        return mSelectedPosition;
+    }
+
+    /**
+     * MOD (HomeTube): move the sidebar selection back to the page that is currently shown
+     */
+    protected void restoreHeadersSelection() {
+        if (mHeadersSupportFragment != null && mSelectedPosition != NO_POSITION) {
+            mHeadersSupportFragment.setSelectedPosition(mSelectedPosition, true);
+        }
+    }
 
     void onRowSelected(int position) {
         // even position is same, it could be data changed, always post selection runnable
