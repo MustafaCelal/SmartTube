@@ -6,6 +6,7 @@ import android.content.SharedPreferences;
 import com.liskovsoft.mediaserviceinterfaces.data.MediaGroup;
 import com.liskovsoft.smartyoutubetv2.common.app.presenters.service.SidebarService;
 import com.liskovsoft.smartyoutubetv2.common.prefs.GeneralData;
+import com.liskovsoft.smartyoutubetv2.common.prefs.MainUIData;
 import com.liskovsoft.smartyoutubetv2.common.prefs.PlayerData;
 import com.liskovsoft.smartyoutubetv2.common.prefs.PlayerTweaksData;
 import com.liskovsoft.youtubeapi.service.internal.MediaServiceData;
@@ -19,7 +20,7 @@ import com.liskovsoft.youtubeapi.service.internal.MediaServiceData;
 public final class HomeTubeDefaults {
     private static final String PREFS_NAME = "hometube_defaults";
     private static final String KEY_APPLIED_VERSION = "applied_version";
-    private static final int VERSION = 2;
+    private static final int VERSION = 3;
 
     private HomeTubeDefaults() {
     }
@@ -46,6 +47,11 @@ public final class HomeTubeDefaults {
 
         if (appliedVersion < 2) {
             applyYouTubeLikeUi(context);
+        }
+
+        if (appliedVersion < 3) {
+            // Static card titles (no marquee), like YouTube
+            MainUIData.instance(context).setCardTextAutoScrollEnabled(false);
         }
 
         prefs.edit().putInt(KEY_APPLIED_VERSION, VERSION).apply();

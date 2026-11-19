@@ -5,6 +5,7 @@ import android.content.res.ColorStateList;
 import android.graphics.Color;
 import android.graphics.PorterDuff;
 import android.graphics.drawable.ColorDrawable;
+import android.text.TextUtils;
 import android.graphics.drawable.Drawable;
 import android.view.LayoutInflater;
 import android.view.View;
@@ -73,6 +74,12 @@ public class IconHeaderItemPresenter extends RowHeaderPresenter {
         ImageView iconView = view.findViewById(R.id.header_icon);
         TextView label = view.findViewById(R.id.header_label);
         final ColorStateList defaultTextColors = label != null ? label.getTextColors() : null;
+
+        if (label != null) {
+            // No marquee inside the pill: show the full name, ellipsize only if really too long
+            label.setEllipsize(TextUtils.TruncateAt.END);
+            label.setMaxWidth((int) (200 * density));
+        }
 
         view.setOnFocusChangeListener((v, hasFocus) -> {
             v.setBackground(hasFocus ? ContextCompat.getDrawable(context, pillResId) : null);
