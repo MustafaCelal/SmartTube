@@ -19,6 +19,7 @@ import com.liskovsoft.sharedutils.helpers.MessageHelpers;
 import com.liskovsoft.sharedutils.helpers.PermissionHelpers;
 import com.liskovsoft.sharedutils.mylogger.Log;
 import com.liskovsoft.sharedutils.rx.RxHelper;
+import com.liskovsoft.smartyoutubetv2.common.misc.LocalWatchLater;
 import com.liskovsoft.smartyoutubetv2.common.R;
 import com.liskovsoft.smartyoutubetv2.common.app.models.data.Playlist;
 import com.liskovsoft.smartyoutubetv2.common.app.models.data.SimpleMediaItem;
@@ -1063,6 +1064,11 @@ public class AppDialogUtil {
             return;
         }
 
+        if (LocalWatchLater.isEnabled(context)) { // HomeTube: no account, save on the device
+            LocalWatchLater.instance(context).toggleWithMessage(video);
+            return;
+        }
+
         MediaItemService itemManager = YouTubeMediaItemService.instance();
 
         Disposable playlistsInfoAction = itemManager.getPlaylistsInfoObserve(video.videoId)
@@ -1077,6 +1083,11 @@ public class AppDialogUtil {
     }
 
     public static void showAddToPlaylistDialog(Context context, Video video, VideoMenuCallback callback, List<PlaylistInfo> playlistInfos, Runnable onFinish) {
+        if (video != null && LocalWatchLater.isEnabled(context)) { // HomeTube: no account, save on the device
+            LocalWatchLater.instance(context).toggleWithMessage(video);
+            return;
+        }
+
         if (playlistInfos == null) {
             MessageHelpers.showMessage(context, R.string.msg_signed_users_only);
             return;

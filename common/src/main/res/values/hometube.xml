@@ -9,4 +9,11 @@
     <string name="hometube_empty_message">Nothing to show here yet</string>
     <string name="hometube_recent_searches">Recent searches</string>
     <string name="hometube_update">Update</string>
+    <string name="hometube_subscriptions_empty">Subscribe to a channel and its new videos show up here. Subscriptions are saved on this device.</string>
+    <string name="hometube_watch_later">Watch later</string>
+    <string name="hometube_watch_later_add">Save to Watch later</string>
+    <string name="hometube_watch_later_remove">Remove from Watch later</string>
+    <string name="hometube_watch_later_added">Saved to Watch later</string>
+    <string name="hometube_watch_later_removed">Removed from Watch later</string>
+    <string name="hometube_watch_later_empty">Videos you save for later show up here. Save them from the video menu or with the playlist button in the player. Saved on this device.</string>
 </resources>

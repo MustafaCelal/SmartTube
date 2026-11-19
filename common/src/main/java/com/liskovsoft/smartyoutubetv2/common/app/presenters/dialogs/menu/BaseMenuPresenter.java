@@ -8,6 +8,7 @@ import com.liskovsoft.mediaserviceinterfaces.data.PlaylistInfo;
 import com.liskovsoft.sharedutils.helpers.Helpers;
 import com.liskovsoft.sharedutils.helpers.MessageHelpers;
 import com.liskovsoft.sharedutils.rx.RxHelper;
+import com.liskovsoft.smartyoutubetv2.common.misc.LocalWatchLater;
 import com.liskovsoft.smartyoutubetv2.common.R;
 import com.liskovsoft.smartyoutubetv2.common.app.models.data.BrowseSection;
 import com.liskovsoft.smartyoutubetv2.common.app.models.data.SimpleMediaItem;
@@ -317,7 +318,7 @@ public abstract class BaseMenuPresenter extends BasePresenter<Void> {
     }
 
     protected void appendCreatePlaylistButton() {
-        if (!mIsCreatePlaylistEnabled) {
+        if (!mIsCreatePlaylistEnabled || LocalWatchLater.isEnabled(getContext())) { // HomeTube: needs an account
             return;
         }
 
@@ -337,7 +338,7 @@ public abstract class BaseMenuPresenter extends BasePresenter<Void> {
     }
 
     protected void appendAddToNewPlaylistButton() {
-        if (!mIsAddToNewPlaylistEnabled) {
+        if (!mIsAddToNewPlaylistEnabled || LocalWatchLater.isEnabled(getContext())) { // HomeTube: needs an account
             return;
         }
 

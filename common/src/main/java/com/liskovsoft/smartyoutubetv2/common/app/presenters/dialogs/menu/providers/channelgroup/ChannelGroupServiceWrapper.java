@@ -52,6 +52,18 @@ public class ChannelGroupServiceWrapper implements ProfileChangeListener {
         return getService().findChannelIdsForGroup(channelGroupId);
     }
 
+    /**
+     * HomeTube: the channel is in the Subscriptions saved on the device (works without an account)
+     */
+    public boolean isLocallySubscribed(String channelId) {
+        if (channelId == null) {
+            return false;
+        }
+
+        String[] ids = findChannelIdsForGroup("1000"); // ChannelGroupServiceImpl.SUBSCRIPTIONS_GROUP_ID
+        return ids != null && java.util.Arrays.asList(ids).contains(channelId);
+    }
+
     public ItemGroup findChannelGroupById(String channelGroupId) {
         return getService().findChannelGroupById(channelGroupId);
     }

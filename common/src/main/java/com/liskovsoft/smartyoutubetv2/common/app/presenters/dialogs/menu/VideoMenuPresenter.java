@@ -10,6 +10,9 @@ import com.liskovsoft.sharedutils.helpers.Helpers;
 import com.liskovsoft.sharedutils.helpers.MessageHelpers;
 import com.liskovsoft.sharedutils.mylogger.Log;
 import com.liskovsoft.sharedutils.rx.RxHelper;
+import com.liskovsoft.smartyoutubetv2.common.app.presenters.dialogs.menu.providers.channelgroup.ChannelGroupServiceWrapper;
+import com.liskovsoft.smartyoutubetv2.common.app.models.data.BrowseSection;
+import com.liskovsoft.smartyoutubetv2.common.misc.LocalWatchLater;
 import com.liskovsoft.smartyoutubetv2.common.R;
 import com.liskovsoft.smartyoutubetv2.common.app.models.data.Playlist;
 import com.liskovsoft.smartyoutubetv2.common.app.models.data.Video;
@@ -245,10 +248,36 @@ public class VideoMenuPresenter extends BaseMenuPresenter {
             return;
         }
 
+        if (LocalWatchLater.isEnabled(getContext())) {
+            appendLocalWatchLaterButton();
+            return;
+        }
+
         mDialogPresenter.appendSingleButton(
                 UiOptionItem.from(
                         getContext().getString(R.string.dialog_add_to_playlist),
                         optionItem -> AppDialogUtil.showAddToPlaylistDialog(getContext(), mVideo, mCallback)
+                ));
+    }
+
+    /**
+     * HomeTube: Watch later kept on the device (no account)
+     */
+    private void appendLocalWatchLaterButton() {
+        LocalWatchLater watchLater = LocalWatchLater.instance(getContext());
+        boolean contains = watchLater.contains(mVideo);
+
+        mDialogPresenter.appendSingleButton(
+                UiOptionItem.from(
+                        getContext().getString(contains ? R.string.hometube_watch_later_remove : R.string.hometube_watch_later_add),
+                        optionItem -> {
+                            mDialogPresenter.closeDialog();
+                            boolean added = watchLater.toggleWithMessage(mVideo);
+                            BrowseSection section = BrowsePresenter.instance(getContext()).getCurrentSection();
+                            if (!added && mCallback != null && section != null && section.getId() == LocalWatchLater.SECTION_ID) {
+                                mCallback.onItemAction(mVideo, VideoMenuCallback.ACTION_REMOVE);
+                            }
+                        }
                 ));
     }
 
@@ -268,7 +297,8 @@ public class VideoMenuPresenter extends BaseMenuPresenter {
     }
 
     private boolean isAddToRecentPlaylistButtonEnabled() {
-        return mIsAddToPlaylistButtonEnabled && mIsAddToRecentPlaylistButtonEnabled && mVideo != null && mVideo.hasVideo();
+        return mIsAddToPlaylistButtonEnabled && mIsAddToRecentPlaylistButtonEnabled && mVideo != null && mVideo.hasVideo() &&
+                !LocalWatchLater.isEnabled(getContext());
     }
 
     private void appendSimpleAddToRecentPlaylistButton(String playlistId, String playlistTitle) {
@@ -720,7 +750,8 @@ public class VideoMenuPresenter extends BaseMenuPresenter {
             return;
         }
 
-        mVideo.isSubscribed = mVideo.isSubscribed || mVideo.belongsToSubscriptions() || mVideo.belongsToChannelUploads();
+        mVideo.isSubscribed = mVideo.isSubscribed || mVideo.belongsToSubscriptions() || mVideo.belongsToChannelUploads() ||
+                (!getSignInService().isSigned() && ChannelGroupServiceWrapper.instance(getContext()).isLocallySubscribed(mVideo.channelId));
 
         mDialogPresenter.appendSingleButton(
                 UiOptionItem.from(getContext().getString(

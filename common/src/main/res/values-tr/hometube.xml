@@ -7,4 +7,11 @@
     <string name="hometube_empty_message">Burada henüz gösterilecek bir şey yok</string>
     <string name="hometube_recent_searches">Son aramalar</string>
     <string name="hometube_update">Güncelle</string>
+    <string name="hometube_subscriptions_empty">Bir kanala abone olduğunda yeni videoları burada görünür. Abonelikler bu cihazda saklanır.</string>
+    <string name="hometube_watch_later">Daha sonra izle</string>
+    <string name="hometube_watch_later_add">Daha sonra izle\'ye kaydet</string>
+    <string name="hometube_watch_later_remove">Daha sonra izle\'den kaldır</string>
+    <string name="hometube_watch_later_added">Daha sonra izle\'ye kaydedildi</string>
+    <string name="hometube_watch_later_removed">Daha sonra izle\'den kaldırıldı</string>
+    <string name="hometube_watch_later_empty">Sonra izlemek için kaydettiğin videolar burada görünür. Video menüsünden ya da oynatıcıdaki liste düğmesinden kaydedebilirsin. Bu cihazda saklanır.</string>
 </resources>

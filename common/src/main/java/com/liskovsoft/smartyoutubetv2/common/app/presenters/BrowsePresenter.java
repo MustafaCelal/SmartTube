@@ -13,6 +13,7 @@ import com.liskovsoft.sharedutils.helpers.Helpers;
 import com.liskovsoft.sharedutils.locale.LocaleUtility;
 import com.liskovsoft.sharedutils.mylogger.Log;
 import com.liskovsoft.sharedutils.rx.RxHelper;
+import com.liskovsoft.smartyoutubetv2.common.misc.LocalWatchLater;
 import com.liskovsoft.smartyoutubetv2.common.R;
 import com.liskovsoft.smartyoutubetv2.common.app.models.data.BrowseSection;
 import com.liskovsoft.smartyoutubetv2.common.app.models.data.Playlist;
@@ -64,6 +65,7 @@ public class BrowsePresenter extends BasePresenter<BrowseView> implements Sectio
     private static final int RAIL_SEARCH_ID = -2001;
     private List<BrowseSection> mRailSections;
     private int mLastContentSectionId = MediaGroup.TYPE_HOME;
+    private BrowseSection mLocalWatchLaterSection; // HomeTube
     private static final String TAG = BrowsePresenter.class.getSimpleName();
     @SuppressLint("StaticFieldLeak")
     private static BrowsePresenter sInstance;
@@ -275,6 +277,7 @@ public class BrowsePresenter extends BasePresenter<BrowseView> implements Sectio
     private void initLocalGridMapping() {
         mLocalGridMappings.put(MediaGroup.TYPE_PLAYBACK_QUEUE, () -> Playlist.instance().getAllReversed());
         mLocalGridMappings.put(MediaGroup.TYPE_BLOCKED_CHANNELS, this::getBlockedChannels);
+        mLocalGridMappings.put(LocalWatchLater.SECTION_ID, () -> LocalWatchLater.instance(getContext()).getVideos()); // HomeTube
     }
 
     private List<Video> getBlockedChannels() {
@@ -332,6 +335,11 @@ public class BrowsePresenter extends BasePresenter<BrowseView> implements Sectio
         for (BrowseSection section : mSections) { // contains sections and pinned items!
             if (section.getId() == MediaGroup.TYPE_SETTINGS) {
                 section.setEnabled(true);
+
+                BrowseSection watchLater = getLocalWatchLaterSection(); // HomeTube: local list without an account
+                if (watchLater != null) {
+                    getView().addSection(index++, watchLater);
+                }
 
                 if (railAccount != null) {
                     getView().addSection(index++, railAccount);
@@ -702,7 +710,29 @@ public class BrowsePresenter extends BasePresenter<BrowseView> implements Sectio
         getView().showProgressBar(false);
     }
 
+    /**
+     * HomeTube: "Watch later" kept on the device, shown while no account is signed in
+     */
+    private BrowseSection getLocalWatchLaterSection() {
+        if (!LocalWatchLater.isEnabled(getContext())) {
+            return null;
+        }
+
+        if (mLocalWatchLaterSection == null) {
+            mLocalWatchLaterSection = new BrowseSection(LocalWatchLater.SECTION_ID, getContext().getString(R.string.hometube_watch_later),
+                    BrowseSection.TYPE_GRID, R.drawable.icon_hometube_watch_later, false);
+        }
+
+        return mLocalWatchLaterSection;
+    }
+
     private void updateLocalGrid(BrowseSection section, Callable<List<Video>> items) {
+        if (section.getId() == LocalWatchLater.SECTION_ID && LocalWatchLater.instance(getContext()).isEmpty()) {
+            getView().showProgressBar(false);
+            getView().showError(createMessageError(getContext().getString(R.string.hometube_watch_later_empty)));
+            return;
+        }
+
         VideoGroup videoGroup = VideoGroup.from(Helpers.get(items), section);
         videoGroup.setAction(VideoGroup.ACTION_REPLACE);
         videoGroup.setId(videoGroup.hashCode());
@@ -1026,7 +1056,16 @@ public class BrowsePresenter extends BasePresenter<BrowseView> implements Sectio
             return new SignInError(getContext());
         }
 
-        String message = getContext().getString(R.string.hometube_empty_message);
+        BrowseSection current = getCurrentSection();
+        String message = getContext().getString(current != null && current.getId() == MediaGroup.TYPE_SUBSCRIPTIONS ?
+                R.string.hometube_subscriptions_empty : R.string.hometube_empty_message);
+        return createMessageError(message);
+    }
+
+    /**
+     * HomeTube: neutral empty state, just a message, no button
+     */
+    private static ErrorFragmentData createMessageError(String message) {
         return new ErrorFragmentData() {
             @Override
             public void onAction() {
@@ -1060,7 +1099,7 @@ public class BrowsePresenter extends BasePresenter<BrowseView> implements Sectio
     private boolean isHiddenWhenSignedOut(BrowseSection section) {
         return getContext() != null && getContext().getResources().getBoolean(R.bool.hometube_rail_actions) &&
                 !getSignInService().isSigned() &&
-                (section.getId() == MediaGroup.TYPE_SUBSCRIPTIONS || section.getId() == MediaGroup.TYPE_USER_PLAYLISTS);
+                section.getId() == MediaGroup.TYPE_USER_PLAYLISTS; // Subscriptions work locally (channels saved on the device)
     }
 
     /**
@@ -1133,6 +1172,11 @@ public class BrowsePresenter extends BasePresenter<BrowseView> implements Sectio
     }
 
     private BrowseSection findSectionById(int sectionId) {
+        BrowseSection watchLater = getLocalWatchLaterSection(); // HomeTube
+        if (watchLater != null && watchLater.getId() == sectionId) {
+            return watchLater;
+        }
+
         for (BrowseSection section : getRailSections()) { // HomeTube
             if (section.getId() == sectionId) {
                 return section;
@@ -1181,6 +1225,14 @@ public class BrowsePresenter extends BasePresenter<BrowseView> implements Sectio
         BrowseSection railAccount = getRailSection(RAIL_ACCOUNT_ID);
 
         for (BrowseSection section : mSections) {
+            BrowseSection watchLater = getLocalWatchLaterSection();
+            if (watchLater != null && section.getId() == MediaGroup.TYPE_SETTINGS) {
+                sectionIndex++;
+                if (watchLater.getId() == sectionId) {
+                    return sectionIndex;
+                }
+            }
+
             if (railAccount != null && section.getId() == MediaGroup.TYPE_SETTINGS) {
                 sectionIndex++;
                 if (railAccount.getId() == sectionId) {

@@ -17,6 +17,7 @@ import com.liskovsoft.sharedutils.helpers.KeyHelpers;
 import com.liskovsoft.sharedutils.helpers.MessageHelpers;
 import com.liskovsoft.sharedutils.mylogger.Log;
 import com.liskovsoft.sharedutils.rx.RxHelper;
+import com.liskovsoft.smartyoutubetv2.common.app.presenters.dialogs.menu.providers.channelgroup.ChannelGroupServiceWrapper;
 import com.liskovsoft.smartyoutubetv2.common.R;
 import com.liskovsoft.smartyoutubetv2.common.app.models.data.Video;
 import com.liskovsoft.smartyoutubetv2.common.app.models.data.VideoGroup;
@@ -381,7 +382,12 @@ public class PlayerUIController extends BasePlayerController {
         setPlaylistAddButtonStateCached();
         setSubtitleButtonState();
         getPlayer().setButtonState(R.id.action_rotate, getPlayerData().getRotationAngle() == 0 ? PlayerUI.BUTTON_OFF : PlayerUI.BUTTON_ON);
-        getPlayer().setButtonState(R.id.action_subscribe, metadata.isSubscribed() ? PlayerUI.BUTTON_ON : PlayerUI.BUTTON_OFF);
+        boolean isSubscribed = metadata.isSubscribed() || (!YouTubeSignInService.instance().isSigned() && getVideo() != null &&
+                ChannelGroupServiceWrapper.instance(getContext()).isLocallySubscribed(getVideo().channelId)); // HomeTube: local subscriptions
+        if (getVideo() != null) {
+            getVideo().isSubscribed = isSubscribed;
+        }
+        getPlayer().setButtonState(R.id.action_subscribe, isSubscribed ? PlayerUI.BUTTON_ON : PlayerUI.BUTTON_OFF);
         getPlayer().setButtonState(R.id.action_afr, getPlayerData().isAfrEnabled() ? PlayerUI.BUTTON_ON : PlayerUI.BUTTON_OFF);
     }
 
