@@ -321,6 +321,7 @@ public class BrowsePresenter extends BasePresenter<BrowseView> implements Sectio
         }
 
         int index = 0;
+        mBootSectionIndex = -1;
 
         BrowseSection railSearch = getRailSection(RAIL_SEARCH_ID); // HomeTube: Search on top
         if (railSearch != null) {
@@ -355,6 +356,12 @@ public class BrowsePresenter extends BasePresenter<BrowseView> implements Sectio
             } else {
                 getView().removeSection(section);
             }
+        }
+
+        if (mBootSectionIndex == -1) {
+            // The boot section is hidden (e.g. Music on the first run): open Home, never a sidebar action like Search
+            int homeIndex = findSectionIndex(MediaGroup.TYPE_HOME);
+            mBootSectionIndex = homeIndex != -1 ? homeIndex : (railSearch != null ? 1 : 0);
         }
 
         // Refresh and restore last focus
