@@ -3,6 +3,8 @@ package com.liskovsoft.smartyoutubetv2.common.misc;
 import android.content.Context;
 import com.liskovsoft.sharedutils.helpers.Helpers;
 import com.liskovsoft.smartyoutubetv2.common.R;
+import com.liskovsoft.smartyoutubetv2.common.app.presenters.AppDialogPresenter;
+import com.liskovsoft.smartyoutubetv2.common.app.models.playback.ui.UiOptionItem;
 import com.liskovsoft.smartyoutubetv2.common.app.models.data.SettingsItem;
 import com.liskovsoft.smartyoutubetv2.common.app.presenters.dialogs.AppUpdatePresenter;
 import com.liskovsoft.smartyoutubetv2.common.app.presenters.settings.AboutSettingsPresenter;
@@ -40,14 +42,11 @@ public class AppDataSourceManager {
     }
 
     public List<SettingsItem> getSettingItems(Context context) {
-        List<SettingsItem> settingItems = new ArrayList<>();
-
         if (context.getResources().getBoolean(R.bool.hometube_rail_actions)) {
-            // HomeTube: update right from the settings page (new versions come from the HomeTube releases)
-            settingItems.add(new SettingsItem(
-                    context.getString(R.string.hometube_update),
-                    () -> AppUpdatePresenter.instance(context).start(true), R.drawable.settings_update));
+            return getHomeTubeSettingItems(context);
         }
+
+        List<SettingsItem> settingItems = new ArrayList<>();
 
         settingItems.add(new SettingsItem(
                 context.getString(R.string.settings_accounts), () -> AccountSettingsPresenter.instance(context).show(), R.drawable.settings_account));
@@ -85,6 +84,61 @@ public class AppDataSourceManager {
         }
 
         return settingItems;
+    }
+
+    /**
+     * HomeTube: most used settings first, rarely used ones grouped under "Advanced", outline icons
+     */
+    private List<SettingsItem> getHomeTubeSettingItems(Context context) {
+        List<SettingsItem> items = new ArrayList<>();
+
+        // New versions come from the HomeTube releases
+        items.add(new SettingsItem(context.getString(R.string.hometube_update),
+                () -> AppUpdatePresenter.instance(context).start(true), R.drawable.hts_update));
+        items.add(new SettingsItem(context.getString(R.string.settings_accounts),
+                () -> AccountSettingsPresenter.instance(context).show(), R.drawable.hts_account));
+        items.add(new SettingsItem(context.getString(R.string.settings_player),
+                () -> PlayerSettingsPresenter.instance(context).show(), R.drawable.hts_player));
+        items.add(new SettingsItem(context.getString(R.string.subtitle_category_title),
+                () -> SubtitleSettingsPresenter.instance(context).show(), R.drawable.hts_subtitles));
+        items.add(new SettingsItem(context.getString(R.string.settings_main_ui),
+                () -> MainUISettingsPresenter.instance(context).show(), R.drawable.hts_ui));
+        items.add(new SettingsItem(context.getString(R.string.settings_language_country),
+                () -> LanguageSettingsPresenter.instance(context).show(), R.drawable.hts_language));
+        items.add(new SettingsItem(context.getString(R.string.settings_search),
+                () -> SearchSettingsPresenter.instance(context).show(), R.drawable.hts_search));
+        items.add(new SettingsItem(context.getString(R.string.content_block_provider),
+                () -> SponsorBlockSettingsPresenter.instance(context).show(), R.drawable.hts_block));
+        items.add(new SettingsItem(context.getString(R.string.app_backup_restore),
+                () -> BackupSettingsPresenter.instance(context).show(), R.drawable.hts_backup));
+        items.add(new SettingsItem(context.getString(R.string.settings_general),
+                () -> GeneralSettingsPresenter.instance(context).show(), R.drawable.hts_general));
+        items.add(new SettingsItem(context.getString(R.string.hometube_advanced),
+                () -> showAdvancedSettings(context), R.drawable.hts_advanced));
+        items.add(new SettingsItem(context.getString(R.string.settings_about),
+                () -> AboutSettingsPresenter.instance(context).show(), R.drawable.hts_about));
+
+        return items;
+    }
+
+    private static void showAdvancedSettings(Context context) {
+        AppDialogPresenter dialog = AppDialogPresenter.instance(context);
+
+        addAdvancedItem(dialog, context.getString(R.string.settings_remote_control),
+                () -> RemoteControlSettingsPresenter.instance(context).show());
+        addAdvancedItem(dialog, context.getString(R.string.auto_frame_rate),
+                () -> AutoFrameRateSettingsPresenter.instance(context).show());
+        addAdvancedItem(dialog, context.getString(R.string.dearrow_provider),
+                () -> DeArrowSettingsPresenter.instance(context).show());
+
+        dialog.showDialog(context.getString(R.string.hometube_advanced));
+    }
+
+    private static void addAdvancedItem(AppDialogPresenter dialog, String title, Runnable show) {
+        dialog.appendSingleButton(UiOptionItem.from(title, option -> {
+            dialog.closeDialog();
+            Utils.postDelayed(show, 100); // let the dialog close first
+        }));
     }
 
     public VideoPreset[] getVideoPresets() {

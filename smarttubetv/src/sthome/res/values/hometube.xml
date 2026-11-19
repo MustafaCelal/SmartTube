@@ -40,4 +40,6 @@
     </style>
     <!-- HomeTube: start screen color (Android 12+) -->
     <item name="app_start_color" type="color">@color/scheme_hometube_background</item>
+    <!-- HomeTube: settings tiles -->
+    <dimen name="settings_card_width">184dp</dimen>
 </resources>
