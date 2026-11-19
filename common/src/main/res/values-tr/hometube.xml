@@ -4,4 +4,5 @@
     <string name="hometube_account_message">Hesabınızı seçin veya yeni bir hesap ekleyin</string>
     <string name="hometube_player_settings">Ayarlar</string>
     <string name="hometube_quality">Kalite</string>
+    <string name="hometube_empty_message">Burada henüz gösterilecek bir şey yok</string>
 </resources>

@@ -6,4 +6,5 @@
     <string name="hometube_account_message">Switch account or add a new one</string>
     <string name="hometube_player_settings">Settings</string>
     <string name="hometube_quality">Quality</string>
+    <string name="hometube_empty_message">Nothing to show here yet</string>
 </resources>

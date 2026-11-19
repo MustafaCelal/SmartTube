@@ -83,6 +83,9 @@ public class IconHeaderItemPresenter extends RowHeaderPresenter {
 
         view.setOnFocusChangeListener((v, hasFocus) -> {
             v.setBackground(hasFocus ? ContextCompat.getDrawable(context, pillResId) : null);
+            if (hasFocus) {
+                v.setAlpha(1f); // the collapsed rail may have dimmed this item
+            }
 
             if (label != null) {
                 if (hasFocus) {

@@ -318,20 +318,27 @@ public class BrowsePresenter extends BasePresenter<BrowseView> implements Sectio
 
         int index = 0;
 
-        for (BrowseSection section : getRailSections()) { // HomeTube
-            getView().addSection(index++, section);
+        BrowseSection railSearch = getRailSection(RAIL_SEARCH_ID); // HomeTube: Search on top
+        if (railSearch != null) {
+            getView().addSection(index++, railSearch);
         }
 
         for (BrowseSection section : mErrorSections) {
             getView().addSection(index++, section);
         }
 
+        BrowseSection railAccount = getRailSection(RAIL_ACCOUNT_ID); // HomeTube: Accounts right above Settings
+
         for (BrowseSection section : mSections) { // contains sections and pinned items!
             if (section.getId() == MediaGroup.TYPE_SETTINGS) {
                 section.setEnabled(true);
+
+                if (railAccount != null) {
+                    getView().addSection(index++, railAccount);
+                }
             }
 
-            if (section.isEnabled()) {
+            if (section.isEnabled() && !isHiddenWhenSignedOut(section)) {
                 if (section.getId() == bootSectionId) {
                     mBootSectionIndex = index;
                 }
@@ -938,7 +945,7 @@ public class BrowsePresenter extends BasePresenter<BrowseView> implements Sectio
                 getView().updateSection(videoGroup);
             } else {
                 getView().showProgressBar(false);
-                getView().showError(new SignInError(getContext()));
+                getView().showError(createSignInOrEmptyError());
             }
         }
     }
@@ -998,11 +1005,62 @@ public class BrowsePresenter extends BasePresenter<BrowseView> implements Sectio
                 mRailSections.add(new BrowseSection(RAIL_SEARCH_ID, context.getString(R.string.action_search),
                         BrowseSection.TYPE_ERROR, R.drawable.icon_hometube_search, false, new RailAction(
                                 context.getString(R.string.hometube_search_message), context.getString(R.string.action_search),
-                                () -> SearchPresenter.instance(getContext()).startSearch(null))));
+                                () -> {
+                                    if (getView() != null) {
+                                        getView().showInlineSearch();
+                                    } else {
+                                        SearchPresenter.instance(getContext()).startSearch(null);
+                                    }
+                                })));
             }
         }
 
         return mRailSections;
+    }
+
+    /**
+     * HomeTube: never push signing in, show a neutral empty state instead.
+     */
+    private ErrorFragmentData createSignInOrEmptyError() {
+        if (getContext() == null || !getContext().getResources().getBoolean(R.bool.hometube_rail_actions)) {
+            return new SignInError(getContext());
+        }
+
+        String message = getContext().getString(R.string.hometube_empty_message);
+        return new ErrorFragmentData() {
+            @Override
+            public void onAction() {
+                // NOP
+            }
+
+            @Override
+            public String getMessage() {
+                return message;
+            }
+
+            @Override
+            public String getActionText() {
+                return null; // no button
+            }
+        };
+    }
+
+    private BrowseSection getRailSection(int id) {
+        for (BrowseSection section : getRailSections()) {
+            if (section.getId() == id) {
+                return section;
+            }
+        }
+        return null;
+    }
+
+    /**
+     * HomeTube: don't push signing in. Sections that only work with an account are hidden while signed out.
+     */
+    private boolean isHiddenWhenSignedOut(BrowseSection section) {
+        return getContext() != null && getContext().getResources().getBoolean(R.bool.hometube_rail_actions) &&
+                !getSignInService().isSigned() &&
+                (section.getId() == MediaGroup.TYPE_SUBSCRIPTIONS || section.getId() == MediaGroup.TYPE_USER_PLAYLISTS);
     }
 
     /**
@@ -1087,9 +1145,10 @@ public class BrowsePresenter extends BasePresenter<BrowseView> implements Sectio
 
         int sectionIndex = -1;
 
-        for (BrowseSection section : getRailSections()) { // HomeTube
+        BrowseSection railSearch = getRailSection(RAIL_SEARCH_ID); // HomeTube, same order as refreshSections()
+        if (railSearch != null) {
             sectionIndex++;
-            if (section.getId() == sectionId) {
+            if (railSearch.getId() == sectionId) {
                 return sectionIndex;
             }
         }
@@ -1103,8 +1162,17 @@ public class BrowsePresenter extends BasePresenter<BrowseView> implements Sectio
             }
         }
 
+        BrowseSection railAccount = getRailSection(RAIL_ACCOUNT_ID);
+
         for (BrowseSection section : mSections) {
-            if (section.isEnabled()) {
+            if (railAccount != null && section.getId() == MediaGroup.TYPE_SETTINGS) {
+                sectionIndex++;
+                if (railAccount.getId() == sectionId) {
+                    return sectionIndex;
+                }
+            }
+
+            if (section.isEnabled() && !isHiddenWhenSignedOut(section)) {
                 sectionIndex++;
                 if (section.getId() == sectionId) {
                     return sectionIndex;
@@ -1319,7 +1387,7 @@ public class BrowsePresenter extends BasePresenter<BrowseView> implements Sectio
             } else if (getSignInService().isSigned()) {
                 errorFragmentData = new CategoryEmptyError(getContext(), null);
             } else {
-                errorFragmentData = new SignInError(getContext());
+                errorFragmentData = createSignInOrEmptyError();
             }
 
             getView().showError(errorFragmentData);

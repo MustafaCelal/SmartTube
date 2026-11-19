@@ -7,6 +7,8 @@ import android.util.TypedValue;
 import android.os.Looper;
 import android.view.LayoutInflater;
 import android.view.View;
+import com.liskovsoft.smartyoutubetv2.tv.ui.browse.dialog.InlineSearchDialog;
+import androidx.leanback.widget.VerticalGridView;
 import android.view.ViewGroup;
 
 import androidx.annotation.NonNull;
@@ -47,6 +49,7 @@ import java.util.Map;
  * Main class to show BrowseFragment with header and rows of videos
  */
 public class BrowseFragment extends BrowseSupportFragment implements BrowseView {
+    private boolean mIsRailMode; // HomeTube
     private static final String TAG = BrowseFragment.class.getSimpleName();
     private ArrayObjectAdapter mSectionRowAdapter;
     private BrowsePresenter mBrowsePresenter;
@@ -161,6 +164,7 @@ public class BrowseFragment extends BrowseSupportFragment implements BrowseView 
                 (row) -> {
                     focusOnContentIfNeeded();
                     mBrowsePresenter.onSectionFocused(getSelectedHeaderId());
+                    highlightCurrentRailItem();
                 }
         );
 
@@ -197,6 +201,15 @@ public class BrowseFragment extends BrowseSupportFragment implements BrowseView 
         TypedValue railWidth = new TypedValue();
         if (getContext().getTheme().resolveAttribute(R.attr.browseCollapsedHeadersWidth, railWidth, true)) {
             setCollapsedHeadersWidth((int) railWidth.getDimension(getResources().getDisplayMetrics()));
+            mIsRailMode = true;
+            setBrowseTransitionListener(new BrowseTransitionListener() {
+                @Override
+                public void onHeadersTransitionStop(boolean withHeaders) {
+                    if (!withHeaders) {
+                        highlightCurrentRailItem();
+                    }
+                }
+            });
         }
         setHeadersTransitionOnBackEnabled(true);
 
@@ -245,6 +258,33 @@ public class BrowseFragment extends BrowseSupportFragment implements BrowseView 
                 return null;
             }
         });
+    }
+
+    /**
+     * HomeTube: in the collapsed rail the current section icon is white, the others dimmed (YouTube TV-like).
+     */
+    private void highlightCurrentRailItem() {
+        if (!mIsRailMode || isShowingHeaders() || getHeadersSupportFragment() == null) {
+            return;
+        }
+
+        VerticalGridView grid = getHeadersSupportFragment().getVerticalGridView();
+        if (grid == null) {
+            return;
+        }
+
+        int selected = getSelectedPosition();
+        float unselectedAlpha = getResources().getFraction(R.fraction.lb_browse_header_unselect_alpha, 1, 1);
+
+        for (int i = 0; i < grid.getChildCount(); i++) {
+            View child = grid.getChildAt(i);
+            child.setAlpha(grid.getChildAdapterPosition(child) == selected ? 1f : unselectedAlpha);
+        }
+    }
+
+    @Override
+    public void showInlineSearch() {
+        InlineSearchDialog.show(getActivity());
     }
 
     private int getSelectedHeaderId() {

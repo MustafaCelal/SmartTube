@@ -22,4 +22,8 @@ public interface BrowseView {
     void focusOnContent();
     boolean isEmpty();
     void updateBadge();
+    /**
+     * HomeTube: search field on top of the current page (no separate search page until submit)
+     */
+    void showInlineSearch();
 }

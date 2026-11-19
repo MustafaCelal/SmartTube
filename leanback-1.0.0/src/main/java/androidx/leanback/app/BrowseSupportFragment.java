@@ -1702,6 +1702,8 @@ public class BrowseSupportFragment extends BaseSupportFragment {
             // MOD (HomeTube): static sidebar like YouTube TV, don't scroll the selected item to the top
             mHeadersSupportFragment.getVerticalGridView().setWindowAlignment(
                     androidx.leanback.widget.BaseGridView.WINDOW_ALIGN_BOTH_EDGE);
+            // the focused (scaled) item at the top must not be clipped
+            mHeadersSupportFragment.getVerticalGridView().setClipToPadding(false);
         }
         setMainFragmentAlignment();
 
