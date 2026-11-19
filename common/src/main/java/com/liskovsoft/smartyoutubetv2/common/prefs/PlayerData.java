@@ -841,7 +841,7 @@ public class PlayerData extends DataChangeBase implements PlayerConstants, Profi
         mRotationAngle = Helpers.parseInt(split, 49, 0);
         mZoomPercents = Helpers.parseInt(split, 50, -1);
         mPlaybackMode = Helpers.parseInt(split, 51, PlayerConstants.PLAYBACK_MODE_ALL);
-        mAudioLanguage = Helpers.parseStr(split, 52, LocaleUtility.getCurrentLanguage(mPrefs.getContext()));
+        mAudioLanguage = Helpers.parseStr(split, 52, ""); // HomeTube: original audio track by default (no auto-dub)
         mSubtitleLanguage = Helpers.parseStr(split, 53, LocaleUtility.getCurrentLanguage(mPrefs.getContext()));
         mEnabledSubtitlesPerChannel = Helpers.parseStrList(split, 54);
         mIsSubtitlesPerChannelEnabled = Helpers.parseBoolean(split, 55, true);
