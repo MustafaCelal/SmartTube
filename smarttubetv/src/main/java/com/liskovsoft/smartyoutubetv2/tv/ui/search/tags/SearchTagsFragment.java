@@ -21,6 +21,7 @@ import com.liskovsoft.smartyoutubetv2.common.app.models.search.vineyard.Tag;
 import com.liskovsoft.smartyoutubetv2.common.app.presenters.SearchPresenter;
 import com.liskovsoft.smartyoutubetv2.common.misc.CrashRestorer;
 import com.liskovsoft.smartyoutubetv2.common.prefs.SearchData;
+import com.liskovsoft.smartyoutubetv2.tv.R;
 import com.liskovsoft.smartyoutubetv2.tv.adapter.VideoGroupObjectAdapter;
 import com.liskovsoft.smartyoutubetv2.tv.presenter.ShortsCardPresenter;
 import com.liskovsoft.smartyoutubetv2.tv.presenter.RowVideoCardPresenter;
@@ -74,6 +75,56 @@ public class SearchTagsFragment extends SearchTagsFragmentBase {
         mCardPresenter.setOnItemViewLongPressedListener(listener);
         mShortsPresenter.setOnItemViewLongPressedListener(listener);
         setSearchTagsLongPressListener(listener);
+    }
+
+    @Override
+    public void onViewCreated(@NonNull android.view.View view, @Nullable Bundle savedInstanceState) {
+        super.onViewCreated(view, savedInstanceState);
+        applyHomeTubeLayout(view);
+    }
+
+    /**
+     * HomeTube: results page in line with the new search page. The bar only shows the query;
+     * moving onto it opens the search page with the query to edit it. No mic/settings buttons.
+     * Same left margin as the search page.
+     */
+    private void applyHomeTubeLayout(android.view.View root) {
+        if (getContext() == null || Helpers.getThemeAttr(getContext(), R.attr.headerFocusPill) == 0) {
+            return;
+        }
+
+        float density = getResources().getDisplayMetrics().density;
+
+        for (int id : new int[] {R.id.lb_search_bar_speech_orb, R.id.search_settings_orb, R.id.lb_search_bar_search_orb}) {
+            android.view.View orb = root.findViewById(id);
+            if (orb != null) {
+                orb.setVisibility(android.view.View.GONE);
+            }
+        }
+
+        android.view.View results = root.findViewById(R.id.lb_results_frame);
+        if (results != null) {
+            results.setPadding((int) (52 * density), results.getPaddingTop(), results.getPaddingRight(), results.getPaddingBottom());
+        }
+
+        android.view.View bar = root.findViewById(R.id.lb_search_bar);
+        if (bar != null) {
+            bar.setPadding((int) (52 * density), bar.getPaddingTop(), bar.getPaddingRight(), bar.getPaddingBottom());
+        }
+
+        android.view.View editor = root.findViewById(R.id.lb_search_text_editor);
+        if (editor != null) {
+            editor.setOnFocusChangeListener((v, hasFocus) -> {
+                if (!hasFocus || !hasResults()) {
+                    return;
+                }
+                // Back to the results, edit the query on the search page instead of the TV keyboard
+                if (results != null) {
+                    results.requestFocus();
+                }
+                com.liskovsoft.smartyoutubetv2.tv.ui.browse.dialog.InlineSearchDialog.show(getActivity(), getSearchBarText(), null);
+            });
+        }
     }
 
     @Override

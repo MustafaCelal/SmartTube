@@ -116,11 +116,22 @@ public final class InlineSearchDialog {
      * @param onClosed called when the search page is closed (with or without a search)
      */
     public static void show(Context context, Runnable onClosed) {
+        show(context, null, onClosed);
+    }
+
+    /**
+     * @param initialQuery text already in the field (e.g. editing the current search)
+     */
+    public static void show(Context context, String initialQuery, Runnable onClosed) {
         if (context == null || sIsShowing) {
             return;
         }
 
-        new InlineSearchDialog(context).showInt(onClosed);
+        InlineSearchDialog dialog = new InlineSearchDialog(context);
+        dialog.showInt(onClosed);
+        if (!TextUtils.isEmpty(initialQuery)) {
+            dialog.setQuery(initialQuery);
+        }
     }
 
     private int dp(float value) {

@@ -40,6 +40,15 @@ public class TagPresenter extends LongClickPresenter {
 
         cardView.setFocusable(true);
         cardView.setFocusableInTouchMode(true);
+        if (isHomeTube(parent.getContext())) {
+            android.widget.TextView text = cardView.findViewById(R.id.text_tag_name);
+            if (text != null) {
+                float density = parent.getResources().getDisplayMetrics().density;
+                text.setPadding((int) (16 * density), (int) (8 * density), (int) (16 * density), (int) (8 * density));
+                text.setTextSize(android.util.TypedValue.COMPLEX_UNIT_SP, 16);
+                text.setTypeface(android.graphics.Typeface.create("sans-serif-medium", android.graphics.Typeface.NORMAL));
+            }
+        }
         updateCardBackgroundColor(cardView, false);
         updateCardTextColor(cardView, false);
         //if (VERSION.SDK_INT >= 23 && MainUIData.instance(parent.getContext()).isUiTweakEnabled(MainUIData.UI_TWEAK_ROUNDED_CORNERS)) {
@@ -49,10 +58,28 @@ public class TagPresenter extends LongClickPresenter {
     }
 
     private static void updateCardBackgroundColor(TagCardView view, boolean selected) {
+        if (isHomeTube(view.getContext())) {
+            // HomeTube: rounded chips, grey when idle, white when focused
+            android.graphics.drawable.GradientDrawable chip = new android.graphics.drawable.GradientDrawable();
+            chip.setColor(selected ? 0xFFFFFFFF : 0xFF272727);
+            chip.setCornerRadius(20 * view.getResources().getDisplayMetrics().density);
+            view.setBackground(chip);
+            return;
+        }
+
         view.setBackgroundColor(selected ? sSelectedBackgroundColor : sDefaultBackgroundColor);
     }
 
+    private static boolean isHomeTube(android.content.Context context) {
+        return Helpers.getThemeAttr(context, R.attr.headerFocusPill) != 0;
+    }
+
     private static void updateCardTextColor(TagCardView view, boolean selected) {
+        if (isHomeTube(view.getContext())) {
+            view.setTextColor(selected ? 0xFF000000 : 0xFFF1F1F1);
+            return;
+        }
+
         view.setTextColor(selected ? sSelectedTextColor : sDefaultTextColor);
     }
 
