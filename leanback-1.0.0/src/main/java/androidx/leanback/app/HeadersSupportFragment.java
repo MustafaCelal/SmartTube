@@ -186,13 +186,21 @@ public class HeadersSupportFragment extends BaseRowSupportFragment {
         if (listView != null) {
             getView().setVisibility(mHeadersGone ? View.GONE : View.VISIBLE);
             if (!mHeadersGone) {
-                if (mHeadersEnabled) {
+                if (mHeadersEnabled || mKeepChildrenVisible) {
                     listView.setChildrenVisibility(View.VISIBLE);
                 } else {
                     listView.setChildrenVisibility(View.INVISIBLE);
                 }
             }
         }
+    }
+
+    // MOD (HomeTube): keep header icons visible while headers are collapsed to a rail
+    private boolean mKeepChildrenVisible;
+
+    void setKeepChildrenVisible(boolean keepVisible) {
+        mKeepChildrenVisible = keepVisible;
+        updateListViewVisibility();
     }
 
     void setHeadersEnabled(boolean enabled) {

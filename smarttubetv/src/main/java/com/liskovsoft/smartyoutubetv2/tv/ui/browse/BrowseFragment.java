@@ -3,6 +3,7 @@ package com.liskovsoft.smartyoutubetv2.tv.ui.browse;
 import android.graphics.drawable.Drawable;
 import android.os.Bundle;
 import android.os.Handler;
+import android.util.TypedValue;
 import android.os.Looper;
 import android.view.LayoutInflater;
 import android.view.View;
@@ -186,6 +187,12 @@ public class BrowseFragment extends BrowseSupportFragment implements BrowseView 
         }
 
         setHeadersState(HEADERS_ENABLED);
+
+        // HomeTube: YouTube TV-like icon rail when the sidebar is collapsed (theme attr, unset = upstream behaviour)
+        TypedValue railWidth = new TypedValue();
+        if (getContext().getTheme().resolveAttribute(R.attr.browseCollapsedHeadersWidth, railWidth, true)) {
+            setCollapsedHeadersWidth((int) railWidth.getDimension(getResources().getDisplayMetrics()));
+        }
         setHeadersTransitionOnBackEnabled(true);
 
         int brandColorRes = Helpers.getThemeAttr(getContext(), R.attr.brandColor);

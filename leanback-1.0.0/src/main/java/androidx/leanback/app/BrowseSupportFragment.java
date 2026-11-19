@@ -724,6 +724,9 @@ public class BrowseSupportFragment extends BaseSupportFragment {
     boolean mShowingHeaders = true;
     boolean mCanShowHeaders = true;
     private int mContainerListMarginStart;
+    // MOD (HomeTube): when > 0, hidden headers collapse to an icon rail of this width instead of sliding off-screen
+    private int mCollapsedHeadersWidth;
+    private int mExpandedHeadersWidth;
     private int mContainerListAlignTop;
     private boolean mMainFragmentScaleEnabled = true;
     OnItemViewSelectedListener mExternalOnItemViewSelectedListener;
@@ -1279,6 +1282,7 @@ public class BrowseSupportFragment extends BaseSupportFragment {
         }
 
         mHeadersSupportFragment.setHeadersGone(!mCanShowHeaders);
+        mHeadersSupportFragment.setKeepChildrenVisible(mCollapsedHeadersWidth > 0); // MOD (HomeTube)
         if (mHeaderPresenterSelector != null) {
             mHeadersSupportFragment.setPresenterSelector(mHeaderPresenterSelector);
         }
@@ -1451,8 +1455,27 @@ public class BrowseSupportFragment extends BaseSupportFragment {
         View containerList;
         containerList = mHeadersSupportFragment.getView();
         lp = (MarginLayoutParams) containerList.getLayoutParams();
-        lp.setMarginStart(onScreen ? 0 : -mContainerListMarginStart);
+        if (mCollapsedHeadersWidth > 0) {
+            if (mExpandedHeadersWidth == 0) {
+                mExpandedHeadersWidth = lp.width;
+            }
+            lp.setMarginStart(0);
+            lp.width = onScreen ? mExpandedHeadersWidth : mCollapsedHeadersWidth;
+        } else {
+            lp.setMarginStart(onScreen ? 0 : -mContainerListMarginStart);
+        }
         containerList.setLayoutParams(lp);
+    }
+
+    /**
+     * MOD (HomeTube): keep a narrow icon rail visible when headers are hidden (YouTube TV-like sidebar).
+     * @param widthPx rail width, 0 restores default behaviour (headers slide off-screen)
+     */
+    public void setCollapsedHeadersWidth(int widthPx) {
+        mCollapsedHeadersWidth = widthPx;
+        if (mHeadersSupportFragment != null) {
+            mHeadersSupportFragment.setKeepChildrenVisible(widthPx > 0);
+        }
     }
 
     void showHeaders(boolean show) {
@@ -1464,7 +1487,7 @@ public class BrowseSupportFragment extends BaseSupportFragment {
 
     private void expandMainFragment(boolean expand) {
         MarginLayoutParams params = (MarginLayoutParams) mScaleFrameLayout.getLayoutParams();
-        params.setMarginStart(!expand ? mContainerListMarginStart : 0);
+        params.setMarginStart(!expand ? mContainerListMarginStart : mCollapsedHeadersWidth);
         mScaleFrameLayout.setLayoutParams(params);
         mMainFragmentAdapter.setExpand(expand);
 

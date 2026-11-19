@@ -21,6 +21,7 @@ import com.liskovsoft.smartyoutubetv2.common.app.presenters.dialogs.BootDialogPr
 import com.liskovsoft.smartyoutubetv2.common.app.views.BrowseView;
 import com.liskovsoft.smartyoutubetv2.common.app.views.SplashView;
 import com.liskovsoft.smartyoutubetv2.common.app.views.ViewManager;
+import com.liskovsoft.smartyoutubetv2.common.misc.HomeTubeDefaults;
 import com.liskovsoft.smartyoutubetv2.common.misc.GDriveBackupWorker;
 import com.liskovsoft.smartyoutubetv2.common.misc.LocalDriveBackupWorker;
 import com.liskovsoft.smartyoutubetv2.common.misc.MediaServiceManager;
@@ -166,6 +167,7 @@ public class SplashPresenter extends BasePresenter<SplashView> {
             // 1) Auth token storage init
             // 2) Media service language setup (I assume that context has proper language)
             GlobalPreferences.instance(getContext());
+            HomeTubeDefaults.applyOnce(getContext()); // HomeTube
         }
     }
 

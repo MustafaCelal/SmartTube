@@ -7,6 +7,11 @@
     <attr name="cardSelectedBackground" format="reference"/>
     <attr name="cardProgressStyle" format="reference"/>
     <attr name="appLogo" format="reference"/>
+    <!-- HomeTube: optional card attrs (unset in other schemes = upstream look) -->
+    <attr name="cardSelectedTextColor" format="reference"/>
+    <attr name="cardSecondaryTextColor" format="reference"/>
+    <attr name="cardFocusOutline" format="reference"/>
+    <attr name="browseCollapsedHeadersWidth" format="dimension"/>
 
     <!-- Increase spacing between items in GridView -->
     <style name="GridViewStyle" parent="Widget.Leanback.GridItems.VerticalGridView">
@@ -175,8 +180,11 @@
         <item name="playbackControlsIconHighlightColor">@color/scheme_hometube_accent</item>
         <item name="cardProgressStyle">@style/ProgressBarHorizontal.Dark</item>
         <item name="shelfBackground">@color/scheme_hometube_background</item>
-        <item name="cardDefaultBackground">@color/scheme_hometube_card_background</item>
-        <item name="cardSelectedBackground">@color/card_selected_background_white</item>
+        <item name="cardDefaultBackground">@color/scheme_hometube_background</item>
+        <item name="cardSelectedBackground">@color/scheme_hometube_background</item>
+        <item name="cardSelectedTextColor">@color/white</item>
+        <item name="cardSecondaryTextColor">@color/scheme_hometube_text_secondary</item>
+        <item name="cardFocusOutline">@drawable/hometube_card_focus</item>
         <item name="android:colorAccent" tools:targetApi="21">@color/scheme_hometube_accent</item>
     </style>
     <style name="App.Theme.HomeTube.Browse" parent="App.Theme.Leanback.Browse">
@@ -185,8 +193,12 @@
         <item name="brandAccentColor">@color/scheme_hometube_accent</item>
         <item name="cardProgressStyle">@style/ProgressBarHorizontal.Dark</item>
         <item name="shelfBackground">@color/scheme_hometube_background</item>
-        <item name="cardDefaultBackground">@color/scheme_hometube_card_background</item>
-        <item name="cardSelectedBackground">@color/card_selected_background_white</item>
+        <item name="cardDefaultBackground">@color/scheme_hometube_background</item>
+        <item name="cardSelectedBackground">@color/scheme_hometube_background</item>
+        <item name="cardSelectedTextColor">@color/white</item>
+        <item name="cardSecondaryTextColor">@color/scheme_hometube_text_secondary</item>
+        <item name="cardFocusOutline">@drawable/hometube_card_focus</item>
+        <item name="browseCollapsedHeadersWidth">@dimen/hometube_rail_width</item>
         <item name="appLogo">@mipmap/app_logo_semi_red</item>
     </style>
     <style name="App.Theme.HomeTube.Preferences" parent="App.Theme.Leanback.Preferences">

@@ -3,11 +3,13 @@ package com.liskovsoft.smartyoutubetv2.tv.presenter;
 import android.app.Activity;
 import android.content.Context;
 import android.graphics.Bitmap;
+import android.graphics.Outline;
 import android.graphics.drawable.Drawable;
 import android.os.Build.VERSION;
 import android.util.Pair;
 import android.view.View;
 import android.view.ViewGroup;
+import android.view.ViewOutlineProvider;
 import android.widget.TextView;
 import androidx.annotation.Nullable;
 import androidx.core.content.ContextCompat;
@@ -39,6 +41,9 @@ public class VideoCardPresenter extends LongClickPresenter {
     private int mDefaultTextColor = -1;
     private int mSelectedBackgroundColor = -1;
     private int mSelectedTextColor = -1;
+    private int mSecondaryTextColor;
+    private boolean mHasSecondaryTextColor;
+    private int mFocusOutlineResId;
     private int mCardPreviewType;
     private int mThumbQuality;
     private int mWidth;
@@ -56,6 +61,18 @@ public class VideoCardPresenter extends LongClickPresenter {
                 ContextCompat.getColor(context, Helpers.getThemeAttr(context, R.attr.cardSelectedBackground));
         mSelectedTextColor =
                 ContextCompat.getColor(context, R.color.card_selected_text_grey);
+
+        // HomeTube: optional theme attrs for a YouTube TV-like card (borderless, focus ring)
+        int selectedTextColorResId = Helpers.getThemeAttr(context, R.attr.cardSelectedTextColor);
+        if (selectedTextColorResId != 0) {
+            mSelectedTextColor = ContextCompat.getColor(context, selectedTextColorResId);
+        }
+        int secondaryTextColorResId = Helpers.getThemeAttr(context, R.attr.cardSecondaryTextColor);
+        mHasSecondaryTextColor = secondaryTextColorResId != 0;
+        if (mHasSecondaryTextColor) {
+            mSecondaryTextColor = ContextCompat.getColor(context, secondaryTextColorResId);
+        }
+        mFocusOutlineResId = Helpers.getThemeAttr(context, R.attr.cardFocusOutline);
 
         mCardPreviewType = getCardPreviewType(context);
         mThumbQuality = getThumbQuality(context);
@@ -88,8 +105,39 @@ public class VideoCardPresenter extends LongClickPresenter {
         //if (VERSION.SDK_INT >= 23 && MainUIData.instance(context).isUiTweakEnabled(MainUIData.UI_TWEAK_ROUNDED_CORNERS)) {
         //    cardView.setForeground(ContextCompat.getDrawable(context, R.drawable.lb_card_outline));
         //}
+        applyFocusOutline(cardView);
         updateCardBackgroundColor(cardView, false);
         return new ViewHolder(cardView);
+    }
+
+    /**
+     * HomeTube: rounded thumbnail with a white ring when focused (YouTube TV look).
+     */
+    private void applyFocusOutline(ComplexImageCardView cardView) {
+        if (mFocusOutlineResId == 0 || VERSION.SDK_INT < 23) {
+            return;
+        }
+
+        View imageWrapper = cardView.findViewById(R.id.main_image_wrapper);
+        if (imageWrapper == null) {
+            return;
+        }
+
+        final float radius = cardView.getResources().getDimension(R.dimen.lb_rounded_rect_corner_radius);
+        imageWrapper.setOutlineProvider(new ViewOutlineProvider() {
+            @Override
+            public void getOutline(View view, Outline outline) {
+                outline.setRoundRect(0, 0, view.getWidth(), view.getHeight(), radius);
+            }
+        });
+        imageWrapper.setClipToOutline(true);
+
+        Drawable focusOutline = ContextCompat.getDrawable(cardView.getContext(), mFocusOutlineResId);
+        if (focusOutline != null) {
+            focusOutline = focusOutline.mutate(); // one instance per card
+            focusOutline.setAlpha(0);
+            imageWrapper.setForeground(focusOutline);
+        }
     }
 
     private void updateCardBackgroundColor(ComplexImageCardView view, boolean selected) {
@@ -112,7 +160,15 @@ public class VideoCardPresenter extends LongClickPresenter {
         }
         TextView contentText = view.findViewById(R.id.content_text);
         if (contentText != null) {
-            contentText.setTextColor(textColor);
+            contentText.setTextColor(mHasSecondaryTextColor ? mSecondaryTextColor : textColor);
+        }
+
+        if (mFocusOutlineResId != 0 && VERSION.SDK_INT >= 23) {
+            View imageWrapper = view.findViewById(R.id.main_image_wrapper);
+            if (imageWrapper != null && imageWrapper.getForeground() != null) {
+                imageWrapper.getForeground().setAlpha(selected ? 255 : 0);
+                imageWrapper.invalidate();
+            }
         }
     }
 

@@ -264,6 +264,15 @@ public class SidebarService implements ProfileChangeListener {
                     MediaGroup.TYPE_PLAYBACK_QUEUE,
                     MediaGroup.TYPE_TRENDING,
                     MediaGroup.TYPE_SHORTS, // HomeTube: Shorts hidden by default
+                    // HomeTube: YouTube-like short sidebar
+                    MediaGroup.TYPE_KIDS_HOME,
+                    MediaGroup.TYPE_SPORTS,
+                    MediaGroup.TYPE_LIVE,
+                    MediaGroup.TYPE_GAMING,
+                    MediaGroup.TYPE_NEWS,
+                    MediaGroup.TYPE_MUSIC,
+                    MediaGroup.TYPE_CHANNEL_UPLOADS,
+                    MediaGroup.TYPE_MY_VIDEOS,
                     MediaGroup.TYPE_BLOCKED_CHANNELS
             }));
         }

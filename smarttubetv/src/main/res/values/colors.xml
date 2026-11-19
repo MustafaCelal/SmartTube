@@ -46,6 +46,8 @@
     <color name="scheme_hometube_sidebar">#0F0F0F</color>
     <color name="scheme_hometube_card_background">#272727</color>
     <color name="scheme_hometube_accent">#FF0033</color>
+    <color name="scheme_hometube_text_secondary">#AAAAAA</color>
+    <color name="scheme_hometube_rail">#0F0F0F</color>
 
     <!-- Blue color scheme -->
     <color name="scheme_blue_background">#33B5E5</color>
