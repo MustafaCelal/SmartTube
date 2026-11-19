@@ -728,6 +728,7 @@ public class BrowseSupportFragment extends BaseSupportFragment {
     private int mCollapsedHeadersWidth;
     private int mExpandedHeadersWidth;
     private int mExpandedHeadersPaddingEnd = -1;
+    private android.graphics.drawable.Drawable mCollapsedHeadersBackground;
     private int mContainerListAlignTop;
     private boolean mMainFragmentScaleEnabled = true;
     OnItemViewSelectedListener mExternalOnItemViewSelectedListener;
@@ -1470,7 +1471,18 @@ public class BrowseSupportFragment extends BaseSupportFragment {
                     onScreen ? mExpandedHeadersPaddingEnd : 0, containerList.getPaddingBottom());
             View fadeOutEdge = containerList.findViewById(R.id.fade_out_edge);
             if (fadeOutEdge != null) {
-                fadeOutEdge.setVisibility(onScreen ? View.VISIBLE : View.GONE);
+                fadeOutEdge.setVisibility(View.GONE); // the translucent menu has its own soft edge
+            }
+            // Expanded menu: translucent, darker behind the labels, softer towards the content
+            // (content behind is dimmed as well, so labels stay readable)
+            View headersGrid = mHeadersSupportFragment.getVerticalGridView();
+            if (headersGrid != null) {
+                if (mCollapsedHeadersBackground == null) {
+                    mCollapsedHeadersBackground = headersGrid.getBackground();
+                }
+                headersGrid.setBackground(onScreen ? new android.graphics.drawable.GradientDrawable(
+                        android.graphics.drawable.GradientDrawable.Orientation.LEFT_RIGHT,
+                        new int[] {0xF20F0F0F, 0xF20F0F0F, 0xCC0F0F0F, 0x000F0F0F}) : mCollapsedHeadersBackground);
             }
         } else {
             lp.setMarginStart(onScreen ? 0 : -mContainerListMarginStart);

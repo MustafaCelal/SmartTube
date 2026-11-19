@@ -50,6 +50,7 @@ import java.util.Map;
  */
 public class BrowseFragment extends BrowseSupportFragment implements BrowseView {
     private boolean mIsRailMode; // HomeTube
+    private int mPrevHeaderId = Integer.MIN_VALUE; // HomeTube: detect a real move onto the Search item
     private static final String TAG = BrowseFragment.class.getSimpleName();
     private ArrayObjectAdapter mSectionRowAdapter;
     private BrowsePresenter mBrowsePresenter;
@@ -162,8 +163,11 @@ public class BrowseFragment extends BrowseSupportFragment implements BrowseView 
     private void setupFragmentFactory() {
         mSectionFragmentFactory = new BrowseSectionFragmentFactory(
                 (row) -> {
-                    if (mIsRailMode && isShowingHeaders() && getView() != null) {
-                        int headerId = getSelectedHeaderId();
+                    int headerId = getSelectedHeaderId();
+                    // Only when the user moved onto Search from another item (not the initial selection while loading)
+                    boolean isMovedByUser = mPrevHeaderId != Integer.MIN_VALUE && mPrevHeaderId != headerId;
+                    mPrevHeaderId = headerId;
+                    if (mIsRailMode && isMovedByUser && isShowingHeaders() && getView() != null) {
                         if (mBrowsePresenter.onRailSectionFocused(headerId)) {
                             return; // HomeTube: Search item opens the search field right away
                         }

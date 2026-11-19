@@ -70,6 +70,11 @@ public class IconHeaderItemPresenter extends RowHeaderPresenter {
 
         float density = context.getResources().getDisplayMetrics().density;
         view.setPadding((int) (12 * density), (int) (8 * density), (int) (20 * density), (int) (8 * density));
+        // The end padding is only for the pill around the label. In the narrow rail the item is
+        // narrower than icon + paddings, so the icon must be allowed to draw into the padding.
+        if (view instanceof ViewGroup) {
+            ((ViewGroup) view).setClipToPadding(false);
+        }
 
         ImageView iconView = view.findViewById(R.id.header_icon);
         TextView label = view.findViewById(R.id.header_label);

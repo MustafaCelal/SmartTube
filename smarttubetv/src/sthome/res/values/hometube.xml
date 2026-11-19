@@ -20,7 +20,7 @@
     <!-- HomeTube: narrow YouTube TV-like sidebar (icons hug the left edge, smaller expanded menu) -->
     <style name="BrowseHeaderStyle" parent="Widget.Leanback.Headers.VerticalGridView">
         <item name="android:verticalSpacing">@dimen/browse_headers_vertical_spacing</item>
-        <item name="android:paddingStart">10dp</item>
+        <item name="android:paddingStart">4dp</item>
         <item name="android:paddingTop">40dp</item>
     </style>
     <dimen name="lb_browse_headers_width">250dp</dimen>
