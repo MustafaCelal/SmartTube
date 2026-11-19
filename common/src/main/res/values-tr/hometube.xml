@@ -15,4 +15,6 @@
     <string name="hometube_watch_later_removed">Daha sonra izle\'den kaldırıldı</string>
     <string name="hometube_watch_later_empty">Sonra izlemek için kaydettiğin videolar burada görünür. Video menüsünden ya da oynatıcıdaki liste düğmesinden kaydedebilirsin. Bu cihazda saklanır.</string>
     <string name="hometube_advanced">Gelişmiş</string>
+    <string name="hometube_key_space">Boşluk</string>
+    <string name="hometube_key_clear">Temizle</string>
 </resources>
