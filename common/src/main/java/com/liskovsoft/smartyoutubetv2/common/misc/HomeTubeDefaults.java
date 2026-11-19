@@ -3,16 +3,23 @@ package com.liskovsoft.smartyoutubetv2.common.misc;
 import android.content.Context;
 import android.content.SharedPreferences;
 
+import com.liskovsoft.mediaserviceinterfaces.data.MediaGroup;
+import com.liskovsoft.smartyoutubetv2.common.app.presenters.service.SidebarService;
+import com.liskovsoft.smartyoutubetv2.common.prefs.GeneralData;
+import com.liskovsoft.smartyoutubetv2.common.prefs.PlayerData;
+import com.liskovsoft.smartyoutubetv2.common.prefs.PlayerTweaksData;
 import com.liskovsoft.youtubeapi.service.internal.MediaServiceData;
 
 /**
- * HomeTube: one-time defaults that live in shared modules (MediaServiceCore),
- * applied on the first start so users can still change them later in settings.
+ * HomeTube: one-time defaults, applied on start (each step only once per install),
+ * so users can still change them later in settings.<br/>
+ * Steps also run on existing installs after an update. They only touch UI settings,
+ * never the account, history or visitor data.
  */
 public final class HomeTubeDefaults {
     private static final String PREFS_NAME = "hometube_defaults";
     private static final String KEY_APPLIED_VERSION = "applied_version";
-    private static final int VERSION = 1;
+    private static final int VERSION = 2;
 
     private HomeTubeDefaults() {
     }
@@ -26,13 +33,55 @@ public final class HomeTubeDefaults {
         }
 
         SharedPreferences prefs = context.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE);
-        if (prefs.getInt(KEY_APPLIED_VERSION, 0) >= VERSION) {
+        int appliedVersion = prefs.getInt(KEY_APPLIED_VERSION, 0);
+
+        if (appliedVersion >= VERSION) {
             return;
         }
 
-        // Hide Shorts everywhere (home shelf, search, subscriptions, history, channels, trending, news)
-        MediaServiceData.instance().setContentHidden(MediaServiceData.CONTENT_SHORTS_ALL, true);
+        if (appliedVersion < 1) {
+            // Hide Shorts everywhere (home shelf, search, subscriptions, history, channels, trending, news)
+            MediaServiceData.instance().setContentHidden(MediaServiceData.CONTENT_SHORTS_ALL, true);
+        }
+
+        if (appliedVersion < 2) {
+            applyYouTubeLikeUi(context);
+        }
 
         prefs.edit().putInt(KEY_APPLIED_VERSION, VERSION).apply();
+    }
+
+    /**
+     * YouTube TV-like UI: short sidebar, no clocks or tech info, minimal player controls.
+     */
+    private static void applyYouTubeLikeUi(Context context) {
+        SidebarService sidebar = SidebarService.instance(context);
+        int[] hidden = {
+                MediaGroup.TYPE_SHORTS, MediaGroup.TYPE_KIDS_HOME, MediaGroup.TYPE_SPORTS, MediaGroup.TYPE_LIVE,
+                MediaGroup.TYPE_GAMING, MediaGroup.TYPE_NEWS, MediaGroup.TYPE_MUSIC, MediaGroup.TYPE_CHANNEL_UPLOADS,
+                MediaGroup.TYPE_MY_VIDEOS, MediaGroup.TYPE_TRENDING, MediaGroup.TYPE_NOTIFICATIONS,
+                MediaGroup.TYPE_BLOCKED_CHANNELS, MediaGroup.TYPE_PLAYBACK_QUEUE
+        };
+        for (int sectionId : hidden) {
+            sidebar.enableSection(sectionId, false);
+        }
+        int[] shown = {
+                MediaGroup.TYPE_HOME, MediaGroup.TYPE_SUBSCRIPTIONS, MediaGroup.TYPE_HISTORY,
+                MediaGroup.TYPE_USER_PLAYLISTS, MediaGroup.TYPE_SETTINGS
+        };
+        for (int sectionId : shown) {
+            sidebar.enableSection(sectionId, true);
+        }
+
+        GeneralData.instance(context).setGlobalClockEnabled(false);
+
+        PlayerData playerData = PlayerData.instance(context);
+        playerData.setClockEnabled(false);
+        playerData.setRemainingTimeEnabled(false);
+        playerData.setQualityInfoEnabled(false);
+
+        PlayerTweaksData tweaks = PlayerTweaksData.instance(context);
+        tweaks.setPlayerButtonDisabled(~0);
+        tweaks.setPlayerButtonEnabled(PlayerTweaksData.PLAYER_BUTTON_DEFAULT);
     }
 }
