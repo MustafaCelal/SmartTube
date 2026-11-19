@@ -10,4 +10,19 @@
 
     <!-- HomeTube: slightly smaller card titles -->
     <dimen name="lb_basic_card_title_text_size">14sp</dimen>
+
+    <!-- HomeTube: no title bar above the rows (Search/Account are in the rail) -->
+    <dimen name="lb_browse_rows_margin_top">56dp</dimen>
+    <!-- HomeTube: YouTube TV-like focus: bigger zoom, lighter dim of the other cards -->
+    <item name="lb_focus_zoom_factor_small" type="fraction">114%</item>
+    <item name="lb_view_dimmed_level" type="fraction">35%</item>
+    <dimen name="hometube_player_dock_gap">8dp</dimen>
+
+    <!-- HomeTube: narrow YouTube TV-like sidebar (icons hug the left edge, smaller expanded menu) -->
+    <style name="BrowseHeaderStyle" parent="Widget.Leanback.Headers.VerticalGridView">
+        <item name="android:verticalSpacing">@dimen/browse_headers_vertical_spacing</item>
+        <item name="android:paddingStart">16dp</item>
+    </style>
+    <dimen name="lb_browse_headers_width">236dp</dimen>
+    <dimen name="lb_browse_rows_margin_start">236dp</dimen>
 </resources>

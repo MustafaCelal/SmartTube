@@ -1,6 +1,7 @@
 package com.liskovsoft.smartyoutubetv2.tv.util;
 
 import android.content.Context;
+import com.liskovsoft.smartyoutubetv2.tv.BuildConfig;
 import android.graphics.ColorMatrix;
 import android.graphics.ColorMatrixColorFilter;
 import android.os.Build.VERSION;
@@ -37,7 +38,7 @@ public class ViewUtil {
     /**
      * Dim focused card?
      */
-    public static final boolean FOCUS_DIMMER_ENABLED = false;
+    public static final boolean FOCUS_DIMMER_ENABLED = "sthome".equals(BuildConfig.FLAVOR); // HomeTube: dim unfocused cards like YouTube TV
     /**
      * Dim other rows in {@link RowPresenter}
      */

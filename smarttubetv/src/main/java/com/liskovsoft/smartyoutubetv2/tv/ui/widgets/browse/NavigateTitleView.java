@@ -84,6 +84,27 @@ public class NavigateTitleView extends TitleView implements OnDataChange, Accoun
         // findViewById is null in constructor. Init mAccountView later.
     }
 
+    /**
+     * HomeTube: no title bar, Search and Account live in the sidebar rail.
+     */
+    private boolean isRailMode() {
+        return getResources().getBoolean(R.bool.hometube_rail_actions);
+    }
+
+    @Override
+    public void setVisibility(int visibility) {
+        super.setVisibility(isRailMode() ? View.GONE : visibility);
+    }
+
+    @Override
+    protected void onAttachedToWindow() {
+        super.onAttachedToWindow();
+
+        if (isRailMode()) {
+            super.setVisibility(View.GONE);
+        }
+    }
+
     @Override
     public View focusSearch(View focused, int direction) {
         View nextFoundFocusableViewInLayout = null;

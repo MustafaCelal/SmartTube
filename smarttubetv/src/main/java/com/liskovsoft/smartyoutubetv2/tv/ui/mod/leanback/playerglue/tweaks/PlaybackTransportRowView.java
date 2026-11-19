@@ -88,6 +88,68 @@ public class PlaybackTransportRowView extends LinearLayout {
         return super.onRequestFocusInDescendants(direction, previouslyFocusedRect);
     }
 
+    /**
+     * MOD (HomeTube): primary and secondary controls may share one row (single control row layout).
+     * Move between them with LEFT/RIGHT instead of jumping to the progress bar.
+     */
+    private View findCrossDockFocus(View focused, int direction) {
+        ViewGroup primary = findViewById(R.id.controls_dock);
+        ViewGroup secondary = findViewById(R.id.secondary_controls_dock);
+
+        if (primary == null || secondary == null || primary.getParent() != secondary.getParent()) {
+            return null; // docks are in different rows (default layout)
+        }
+
+        ViewGroup from = isDescendant(primary, focused) ? primary : isDescendant(secondary, focused) ? secondary : null;
+        if (from == null) {
+            return null;
+        }
+
+        View next = FocusFinder.getInstance().findNextFocus(from, focused, direction);
+        if (next != null) {
+            return next; // stay inside the current dock
+        }
+
+        if (from == primary && direction == View.FOCUS_RIGHT) {
+            return findEdgeFocusable(secondary, true);
+        } else if (from == secondary && direction == View.FOCUS_LEFT) {
+            return findEdgeFocusable(primary, false);
+        }
+
+        return null;
+    }
+
+    private static boolean isDescendant(ViewGroup parent, View view) {
+        for (View v = view; v != null; v = v.getParent() instanceof View ? (View) v.getParent() : null) {
+            if (v == parent) {
+                return true;
+            }
+        }
+        return false;
+    }
+
+    private static View findEdgeFocusable(ViewGroup dock, boolean first) {
+        java.util.ArrayList<View> focusables = new java.util.ArrayList<>();
+        dock.addFocusables(focusables, View.FOCUS_FORWARD);
+        if (focusables.isEmpty()) {
+            return null;
+        }
+        View result = focusables.get(0);
+        for (View v : focusables) {
+            if (v.getVisibility() != View.VISIBLE) {
+                continue;
+            }
+            int[] pos = new int[2];
+            int[] best = new int[2];
+            v.getLocationOnScreen(pos);
+            result.getLocationOnScreen(best);
+            if (first ? pos[0] < best[0] : pos[0] > best[0]) {
+                result = v;
+            }
+        }
+        return result;
+    }
+
     @Override
     public View focusSearch(View focused, int direction) {
         // when focusSearch vertically, return the next immediate focusable child
@@ -109,6 +171,11 @@ public class PlaybackTransportRowView extends LinearLayout {
                     }
                 }
             } else if (direction == View.FOCUS_LEFT || direction == View.FOCUS_RIGHT) {
+                View crossDock = findCrossDockFocus(focused, direction);
+                if (crossDock != null) {
+                    return crossDock;
+                }
+
                 if (getFocusedChild() instanceof ViewGroup) {
                     return FocusFinder.getInstance().findNextFocus(
                             (ViewGroup) getFocusedChild(), focused, direction);
