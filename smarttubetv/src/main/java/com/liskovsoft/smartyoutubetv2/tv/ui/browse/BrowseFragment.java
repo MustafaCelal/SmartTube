@@ -243,6 +243,11 @@ public class BrowseFragment extends BrowseSupportFragment implements BrowseView 
             mIsRailMode = true;
             setBrowseTransitionListener(new BrowseTransitionListener() {
                 @Override
+                public void onHeadersTransitionStart(boolean withHeaders) {
+                    updateRailLabels(!withHeaders);
+                }
+
+                @Override
                 public void onHeadersTransitionStop(boolean withHeaders) {
                     if (!withHeaders) {
                         highlightCurrentRailItem();
@@ -302,6 +307,30 @@ public class BrowseFragment extends BrowseSupportFragment implements BrowseView 
     /**
      * HomeTube: in the collapsed rail the current section icon is white, the others dimmed (YouTube TV-like).
      */
+    /**
+     * HomeTube: icons only in the collapsed rail, names when the menu is open
+     */
+    private void updateRailLabels(boolean hidden) {
+        if (!mIsRailMode) {
+            return;
+        }
+
+        IconHeaderItemPresenter.setLabelsHidden(hidden);
+
+        VerticalGridView grid = getHeadersSupportFragment() != null ? getHeadersSupportFragment().getVerticalGridView() : null;
+        if (grid != null) {
+            for (int i = 0; i < grid.getChildCount(); i++) {
+                IconHeaderItemPresenter.updateLabel(grid.getChildAt(i));
+            }
+        }
+    }
+
+    @Override
+    public void onStart() {
+        super.onStart();
+        updateRailLabels(!isShowingHeaders());
+    }
+
     private void highlightCurrentRailItem() {
         if (!mIsRailMode || isShowingHeaders() || getHeadersSupportFragment() == null) {
             return;

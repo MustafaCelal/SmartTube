@@ -274,8 +274,12 @@ public class VideoMenuPresenter extends BaseMenuPresenter {
                             mDialogPresenter.closeDialog();
                             boolean added = watchLater.toggleWithMessage(mVideo);
                             BrowseSection section = BrowsePresenter.instance(getContext()).getCurrentSection();
-                            if (!added && mCallback != null && section != null && section.getId() == LocalWatchLater.SECTION_ID) {
-                                mCallback.onItemAction(mVideo, VideoMenuCallback.ACTION_REMOVE);
+                            if (!added && section != null && section.getId() == LocalWatchLater.SECTION_ID) {
+                                if (watchLater.isEmpty()) {
+                                    BrowsePresenter.instance(getContext()).refresh(false); // show the empty page message
+                                } else if (mCallback != null) {
+                                    mCallback.onItemAction(mVideo, VideoMenuCallback.ACTION_REMOVE);
+                                }
                             }
                         }
                 ));

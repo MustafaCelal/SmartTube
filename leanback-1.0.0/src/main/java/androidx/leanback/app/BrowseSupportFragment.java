@@ -1688,6 +1688,13 @@ public class BrowseSupportFragment extends BaseSupportFragment {
             // Otherwise swap immediately
             commitMainFragment();
         }
+
+        if (mCollapsedHeadersWidth > 0 && mScaleFrameLayout != null) {
+            // MOD (HomeTube): the new page fades in instead of popping up
+            mScaleFrameLayout.animate().cancel();
+            mScaleFrameLayout.setAlpha(0f);
+            mScaleFrameLayout.animate().alpha(1f).setDuration(180).start();
+        }
     }
 
     /**

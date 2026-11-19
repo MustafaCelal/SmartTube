@@ -35,6 +35,21 @@ public class IconHeaderItemPresenter extends RowHeaderPresenter {
     private final int mResId;
     private final String mIconUrl;
     private Drawable mDefaultIcon;
+    private static boolean sLabelsHidden; // HomeTube: icons only while the sidebar is collapsed
+
+    /**
+     * HomeTube: hide labels in the collapsed icon rail (they would show up as "…")
+     */
+    public static void setLabelsHidden(boolean hidden) {
+        sLabelsHidden = hidden;
+    }
+
+    public static void updateLabel(View headerView) {
+        TextView label = headerView != null ? headerView.findViewById(R.id.header_label) : null;
+        if (label != null) {
+            label.setVisibility(sLabelsHidden ? View.INVISIBLE : View.VISIBLE);
+        }
+    }
 
     public IconHeaderItemPresenter(int resId, String iconUrl) {
         mResId = resId;
@@ -143,6 +158,7 @@ public class IconHeaderItemPresenter extends RowHeaderPresenter {
         if (label != null) {
             label.setText(headerItem.getName());
         }
+        updateLabel(rootView);
     }
 
     @Override

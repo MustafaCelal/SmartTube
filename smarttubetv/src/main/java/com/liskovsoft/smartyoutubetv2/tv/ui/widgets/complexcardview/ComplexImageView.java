@@ -29,6 +29,7 @@ public class ComplexImageView extends RelativeLayout {
     private FrameLayout mPreviewContainer;
     private ProgressBar mProgressBar;
     private TextView mBadgeText;
+    private boolean mIsRoundedBadge;
     private ViewGroup mProgressContainer;
     private int mPreviewWidth;
     private int mPreviewHeight;
@@ -56,6 +57,21 @@ public class ComplexImageView extends RelativeLayout {
         inflate(getContext(), R.layout.text_badge_image_view, this);
         mMainImage = findViewById(R.id.main_image);
         mBadgeText = findViewById(R.id.extra_text_badge);
+        mIsRoundedBadge = isHomeTube(getContext());
+        if (mIsRoundedBadge && mBadgeText != null) {
+            // HomeTube: YouTube-like duration label, rounded, slightly see-through, a bit away from the edges
+            float density = getResources().getDisplayMetrics().density;
+            mBadgeText.setPadding((int) (6 * density), (int) (3 * density), (int) (6 * density), (int) (3 * density));
+            mBadgeText.setTypeface(android.graphics.Typeface.create("sans-serif-medium", android.graphics.Typeface.NORMAL));
+            ViewGroup.LayoutParams lp = mBadgeText.getLayoutParams();
+            if (lp instanceof ViewGroup.MarginLayoutParams) {
+                ((ViewGroup.MarginLayoutParams) lp).setMarginEnd((int) (8 * density));
+                ((ViewGroup.MarginLayoutParams) lp).rightMargin = (int) (8 * density);
+                ((ViewGroup.MarginLayoutParams) lp).bottomMargin = (int) (8 * density);
+                mBadgeText.setLayoutParams(lp);
+            }
+            setBadgeColor(Color.BLACK);
+        }
         mProgressBar = findViewById(R.id.clip_progress);
         mProgressContainer = findViewById(R.id.clip_info);
         mPreviewContainer = findViewById(R.id.preview_container);
@@ -109,7 +125,20 @@ public class ComplexImageView extends RelativeLayout {
             return;
         }
 
+        if (mIsRoundedBadge) {
+            android.graphics.drawable.GradientDrawable background = new android.graphics.drawable.GradientDrawable();
+            background.setColor(color == Color.BLACK ? 0xCC000000 : color);
+            background.setCornerRadius(4 * getResources().getDisplayMetrics().density);
+            mBadgeText.setBackground(background);
+            return;
+        }
+
         mBadgeText.setBackgroundColor(color);
+    }
+
+    private static boolean isHomeTube(Context context) {
+        android.util.TypedValue value = new android.util.TypedValue();
+        return context.getTheme().resolveAttribute(R.attr.cardFocusOutline, value, true);
     }
 
     /**

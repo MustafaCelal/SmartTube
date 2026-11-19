@@ -21,6 +21,7 @@ import com.liskovsoft.smartyoutubetv2.common.app.models.data.SettingsGroup;
 import com.liskovsoft.smartyoutubetv2.common.app.models.data.SettingsItem;
 import com.liskovsoft.smartyoutubetv2.common.app.models.data.Video;
 import com.liskovsoft.smartyoutubetv2.common.app.models.data.VideoGroup;
+import com.liskovsoft.smartyoutubetv2.common.app.models.errors.IconErrorData;
 import com.liskovsoft.smartyoutubetv2.common.app.models.errors.CategoryEmptyError;
 import com.liskovsoft.smartyoutubetv2.common.app.models.errors.ErrorFragmentData;
 import com.liskovsoft.smartyoutubetv2.common.app.models.errors.PasswordError;
@@ -1065,23 +1066,47 @@ public class BrowsePresenter extends BasePresenter<BrowseView> implements Sectio
     /**
      * HomeTube: neutral empty state, just a message, no button
      */
-    private static ErrorFragmentData createMessageError(String message) {
-        return new ErrorFragmentData() {
-            @Override
-            public void onAction() {
-                // NOP
-            }
+    private ErrorFragmentData createMessageError(String message) {
+        BrowseSection current = getCurrentSection();
+        int iconResId = current != null && current.getResId() > 0 ? current.getResId() : R.drawable.icon_home;
+        return createMessageError(message, iconResId);
+    }
 
-            @Override
-            public String getMessage() {
-                return message;
-            }
+    /**
+     * HomeTube: neutral empty state with the section's icon above the message, no button
+     */
+    private static ErrorFragmentData createMessageError(String message, int iconResId) {
+        return new MessageError(message, iconResId);
+    }
 
-            @Override
-            public String getActionText() {
-                return null; // no button
-            }
-        };
+    private static class MessageError implements ErrorFragmentData, IconErrorData {
+        private final String mMessage;
+        private final int mIconResId;
+
+        MessageError(String message, int iconResId) {
+            mMessage = message;
+            mIconResId = iconResId;
+        }
+
+        @Override
+        public int getIconResId() {
+            return mIconResId;
+        }
+
+        @Override
+        public void onAction() {
+            // NOP
+        }
+
+        @Override
+        public String getMessage() {
+            return mMessage;
+        }
+
+        @Override
+        public String getActionText() {
+            return null; // no button
+        }
     }
 
     private BrowseSection getRailSection(int id) {

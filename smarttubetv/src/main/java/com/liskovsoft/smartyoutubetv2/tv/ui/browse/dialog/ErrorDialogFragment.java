@@ -11,6 +11,7 @@ import androidx.fragment.app.Fragment;
 import androidx.leanback.app.BrowseSupportFragment;
 import androidx.leanback.app.BrowseSupportFragment.MainFragmentAdapter;
 import com.liskovsoft.sharedutils.helpers.Helpers;
+import com.liskovsoft.smartyoutubetv2.common.app.models.errors.IconErrorData;
 import com.liskovsoft.smartyoutubetv2.common.app.models.errors.CategoryEmptyError;
 import com.liskovsoft.smartyoutubetv2.common.app.models.errors.ErrorFragmentData;
 import com.liskovsoft.smartyoutubetv2.common.app.models.errors.SignInError;
@@ -62,6 +63,21 @@ public class ErrorDialogFragment extends ErrorSupportFragment implements BrowseS
 
         if (mDialogData instanceof CategoryEmptyError || mDialogData instanceof SignInError) {
             setImageDrawable(ContextCompat.getDrawable(getActivity(), R.drawable.lb_ic_sad_cloud));
+        } else if (mDialogData instanceof IconErrorData) {
+            // HomeTube: calm grey icon of the section above the message
+            android.graphics.drawable.Drawable icon = ContextCompat.getDrawable(getActivity(), ((IconErrorData) mDialogData).getIconResId());
+            if (icon != null) {
+                icon = icon.mutate();
+                icon.setColorFilter(0xFF5F5F5F, android.graphics.PorterDuff.Mode.SRC_IN);
+                setImageDrawable(icon);
+                ImageView imageView = (ImageView) Helpers.getField(this, "mImageView");
+                if (imageView != null) {
+                    int size = (int) (72 * getResources().getDisplayMetrics().density);
+                    imageView.setMaxWidth(size);
+                    imageView.setMaxHeight(size);
+                    imageView.setAdjustViewBounds(true);
+                }
+            }
         }
 
         setMessage(mDialogData.getMessage());

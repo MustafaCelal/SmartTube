@@ -71,8 +71,14 @@ public final class ProgressBarManager {
             if (mUserProvidedProgressBar) {
                 mProgressBarView.setVisibility(View.INVISIBLE);
             } else if (mProgressBarView != null) {
-                rootView.removeView(mProgressBarView);
+                View view = mProgressBarView;
                 mProgressBarView = null;
+                if (view instanceof ProgressBar) {
+                    rootView.removeView(view);
+                } else {
+                    // HomeTube placeholder: fade out under the arriving content
+                    view.animate().alpha(0f).setDuration(180).withEndAction(() -> rootView.removeView(view)).start();
+                }
             }
         }
     };
