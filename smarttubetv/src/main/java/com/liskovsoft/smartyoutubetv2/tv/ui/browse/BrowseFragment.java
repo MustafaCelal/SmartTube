@@ -162,6 +162,12 @@ public class BrowseFragment extends BrowseSupportFragment implements BrowseView 
     private void setupFragmentFactory() {
         mSectionFragmentFactory = new BrowseSectionFragmentFactory(
                 (row) -> {
+                    if (mIsRailMode && isShowingHeaders() && getView() != null) {
+                        int headerId = getSelectedHeaderId();
+                        if (mBrowsePresenter.onRailSectionFocused(headerId)) {
+                            return; // HomeTube: Search item opens the search field right away
+                        }
+                    }
                     focusOnContentIfNeeded();
                     mBrowsePresenter.onSectionFocused(getSelectedHeaderId());
                     highlightCurrentRailItem();

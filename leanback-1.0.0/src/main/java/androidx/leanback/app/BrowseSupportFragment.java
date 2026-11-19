@@ -1498,6 +1498,22 @@ public class BrowseSupportFragment extends BaseSupportFragment {
 
     private void expandMainFragment(boolean expand) {
         MarginLayoutParams params = (MarginLayoutParams) mScaleFrameLayout.getLayoutParams();
+        if (mCollapsedHeadersWidth > 0) {
+            // MOD (HomeTube): the expanded menu overlays the content (YouTube TV-like),
+            // content keeps its place and size and is only dimmed
+            params.setMarginStart(mCollapsedHeadersWidth);
+            mScaleFrameLayout.setLayoutParams(params);
+            View rowsDock = getView() != null ? getView().findViewById(R.id.browse_container_dock) : null;
+            if (rowsDock instanceof android.widget.FrameLayout) {
+                ((android.widget.FrameLayout) rowsDock).setForeground(
+                        expand ? null : new android.graphics.drawable.ColorDrawable(0xB30F0F0F));
+            }
+            mMainFragmentAdapter.setExpand(true);
+            setMainFragmentAlignment();
+            mScaleFrameLayout.setLayoutScaleY(1);
+            mScaleFrameLayout.setChildScale(1);
+            return;
+        }
         params.setMarginStart(!expand ? mContainerListMarginStart : mCollapsedHeadersWidth);
         mScaleFrameLayout.setLayoutParams(params);
         mMainFragmentAdapter.setExpand(expand);
@@ -1748,7 +1764,8 @@ public class BrowseSupportFragment extends BaseSupportFragment {
         int alignOffset = mContainerListAlignTop;
         if (mMainFragmentScaleEnabled
                 && mMainFragmentAdapter.isScalingEnabled()
-                && mShowingHeaders) {
+                && mShowingHeaders
+                && mCollapsedHeadersWidth == 0) {
             alignOffset = (int) (alignOffset / mScaleFactor + 0.5f);
         }
         mMainFragmentAdapter.setAlignment(alignOffset);

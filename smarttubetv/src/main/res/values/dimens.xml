@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
     <!-- HomeTube: collapsed sidebar (icon rail) width -->
-    <dimen name="hometube_rail_width">76dp</dimen>
+    <dimen name="hometube_rail_width">64dp</dimen>
     <!-- Default, same as xhdpi -->
     <!-- 320dpi, Amazon Fire TV Stick -->
 

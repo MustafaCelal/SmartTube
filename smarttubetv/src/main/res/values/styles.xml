@@ -201,6 +201,7 @@
         <item name="cardFocusOutline">@drawable/hometube_card_focus</item>
         <item name="browseCollapsedHeadersWidth">@dimen/hometube_rail_width</item>
         <item name="headerFocusPill">@drawable/hometube_header_pill</item>
+        <item name="browsePaddingStart">28dp</item>
         <item name="appLogo">@null</item>
     </style>
     <style name="App.Theme.HomeTube.Preferences" parent="App.Theme.Leanback.Preferences">

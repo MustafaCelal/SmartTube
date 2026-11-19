@@ -1067,6 +1067,13 @@ public class BrowsePresenter extends BasePresenter<BrowseView> implements Sectio
      * HomeTube: run the action of a rail item (Account, Search) when its header is clicked.
      * @return true if the section is a rail item
      */
+    /**
+     * HomeTube: Search opens as soon as it gets focus in the rail (no extra OK press), like YouTube
+     */
+    public boolean onRailSectionFocused(int sectionId) {
+        return sectionId == RAIL_SEARCH_ID && onRailSectionClicked(sectionId);
+    }
+
     public boolean onRailSectionClicked(int sectionId) {
         for (BrowseSection section : getRailSections()) {
             if (section.getId() == sectionId && section.getData() instanceof ErrorFragmentData) {

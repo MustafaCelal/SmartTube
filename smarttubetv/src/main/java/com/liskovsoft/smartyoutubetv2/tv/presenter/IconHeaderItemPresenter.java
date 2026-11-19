@@ -78,7 +78,7 @@ public class IconHeaderItemPresenter extends RowHeaderPresenter {
         if (label != null) {
             // No marquee inside the pill: show the full name, ellipsize only if really too long
             label.setEllipsize(TextUtils.TruncateAt.END);
-            label.setMaxWidth((int) (200 * density));
+            label.setMaxWidth((int) (150 * density));
         }
 
         view.setOnFocusChangeListener((v, hasFocus) -> {
