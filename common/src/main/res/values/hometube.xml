@@ -1,0 +1,7 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- HomeTube: Search and Account as the first items of the sidebar (overridden to true in the HomeTube flavor) -->
+    <bool name="hometube_rail_actions">false</bool>
+    <string name="hometube_search_message">Search for videos, channels and playlists</string>
+    <string name="hometube_account_message">Switch account or add a new one</string>
+</resources>

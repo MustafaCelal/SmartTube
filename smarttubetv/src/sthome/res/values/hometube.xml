@@ -1,0 +1,13 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- HomeTube: Search and Account live in the sidebar rail (YouTube TV-like) -->
+    <bool name="hometube_rail_actions">true</bool>
+
+    <!-- HomeTube: regular (wider) Roboto instead of condensed, closer to the YouTube app -->
+    <style name="TextAppearance.Leanback" parent="TextAppearance.LeanbackBase">
+        <item name="android:fontFamily">sans-serif</item>
+    </style>
+
+    <!-- HomeTube: slightly smaller card titles -->
+    <dimen name="lb_basic_card_title_text_size">14sp</dimen>
+</resources>

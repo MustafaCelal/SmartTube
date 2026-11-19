@@ -727,6 +727,7 @@ public class BrowseSupportFragment extends BaseSupportFragment {
     // MOD (HomeTube): when > 0, hidden headers collapse to an icon rail of this width instead of sliding off-screen
     private int mCollapsedHeadersWidth;
     private int mExpandedHeadersWidth;
+    private int mExpandedHeadersPaddingEnd = -1;
     private int mContainerListAlignTop;
     private boolean mMainFragmentScaleEnabled = true;
     OnItemViewSelectedListener mExternalOnItemViewSelectedListener;
@@ -1461,6 +1462,16 @@ public class BrowseSupportFragment extends BaseSupportFragment {
             }
             lp.setMarginStart(0);
             lp.width = onScreen ? mExpandedHeadersWidth : mCollapsedHeadersWidth;
+            if (mExpandedHeadersPaddingEnd == -1) {
+                mExpandedHeadersPaddingEnd = containerList.getPaddingEnd();
+            }
+            // no fading edge padding in the rail, otherwise icons get clipped
+            containerList.setPaddingRelative(containerList.getPaddingStart(), containerList.getPaddingTop(),
+                    onScreen ? mExpandedHeadersPaddingEnd : 0, containerList.getPaddingBottom());
+            View fadeOutEdge = containerList.findViewById(R.id.fade_out_edge);
+            if (fadeOutEdge != null) {
+                fadeOutEdge.setVisibility(onScreen ? View.VISIBLE : View.GONE);
+            }
         } else {
             lp.setMarginStart(onScreen ? 0 : -mContainerListMarginStart);
         }

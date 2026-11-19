@@ -133,6 +133,11 @@ public class BrowseFragment extends BrowseSupportFragment implements BrowseView 
                         // touch screen support
                         getHeadersSupportFragment().setSelectedPosition(newPosition);
                     } else {
+                        // HomeTube: Account/Search rail items run their action
+                        if (mBrowsePresenter.onRailSectionClicked((int) headerId)) {
+                            return;
+                        }
+
                         // update section when clicked or pressed
                         mBrowsePresenter.onSectionFocused((int) headerId);
                         startHeadersTransitionSafe(false);

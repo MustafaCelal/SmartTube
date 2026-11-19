@@ -27,6 +27,7 @@ import com.liskovsoft.smartyoutubetv2.common.app.models.errors.SignInError;
 import com.liskovsoft.smartyoutubetv2.common.app.models.playback.service.VideoStateService;
 import com.liskovsoft.smartyoutubetv2.common.app.models.playback.service.VideoStateService.State;
 import com.liskovsoft.smartyoutubetv2.common.app.presenters.base.BasePresenter;
+import com.liskovsoft.smartyoutubetv2.common.app.presenters.dialogs.AccountSelectionPresenter;
 import com.liskovsoft.smartyoutubetv2.common.app.presenters.dialogs.VideoActionPresenter;
 import com.liskovsoft.smartyoutubetv2.common.app.presenters.dialogs.menu.ChannelUploadsMenuPresenter;
 import com.liskovsoft.smartyoutubetv2.common.app.presenters.dialogs.menu.SectionMenuPresenter;
@@ -58,6 +59,10 @@ import io.reactivex.Observable;
 import io.reactivex.disposables.Disposable;
 
 public class BrowsePresenter extends BasePresenter<BrowseView> implements SectionPresenter, VideoGroupPresenter, AccountChangeListener {
+    // HomeTube: sidebar rail items
+    private static final int RAIL_ACCOUNT_ID = -2002;
+    private static final int RAIL_SEARCH_ID = -2001;
+    private List<BrowseSection> mRailSections;
     private static final String TAG = BrowsePresenter.class.getSimpleName();
     @SuppressLint("StaticFieldLeak")
     private static BrowsePresenter sInstance;
@@ -311,6 +316,10 @@ public class BrowsePresenter extends BasePresenter<BrowseView> implements Sectio
         }
 
         int index = 0;
+
+        for (BrowseSection section : getRailSections()) { // HomeTube
+            getView().addSection(index++, section);
+        }
 
         for (BrowseSection section : mErrorSections) {
             getView().addSection(index++, section);
@@ -942,12 +951,83 @@ public class BrowsePresenter extends BasePresenter<BrowseView> implements Sectio
         return item.belongsToChannelUploads() && !item.hasVideo();
     }
 
+    /**
+     * HomeTube: Account and Search as the first sidebar items (YouTube TV-like rail).
+     */
+    private List<BrowseSection> getRailSections() {
+        if (mRailSections == null) {
+            mRailSections = new ArrayList<>();
+
+            if (getContext() != null && getContext().getResources().getBoolean(R.bool.hometube_rail_actions)) {
+                Context context = getContext();
+                mRailSections.add(new BrowseSection(RAIL_ACCOUNT_ID, context.getString(R.string.settings_accounts),
+                        BrowseSection.TYPE_ERROR, R.drawable.icon_hometube_account, false, new RailAction(
+                                context.getString(R.string.hometube_account_message), context.getString(R.string.settings_accounts),
+                                () -> AccountSelectionPresenter.instance(getContext()).nextAccountOrDialog())));
+                mRailSections.add(new BrowseSection(RAIL_SEARCH_ID, context.getString(R.string.action_search),
+                        BrowseSection.TYPE_ERROR, R.drawable.icon_hometube_search, false, new RailAction(
+                                context.getString(R.string.hometube_search_message), context.getString(R.string.action_search),
+                                () -> SearchPresenter.instance(getContext()).startSearch(null))));
+            }
+        }
+
+        return mRailSections;
+    }
+
+    /**
+     * HomeTube: run the action of a rail item (Account, Search) when its header is clicked.
+     * @return true if the section is a rail item
+     */
+    public boolean onRailSectionClicked(int sectionId) {
+        for (BrowseSection section : getRailSections()) {
+            if (section.getId() == sectionId && section.getData() instanceof ErrorFragmentData) {
+                ((ErrorFragmentData) section.getData()).onAction();
+                return true;
+            }
+        }
+
+        return false;
+    }
+
+    private static class RailAction implements ErrorFragmentData {
+        private final String mMessage;
+        private final String mActionText;
+        private final Runnable mAction;
+
+        RailAction(String message, String actionText, Runnable action) {
+            mMessage = message;
+            mActionText = actionText;
+            mAction = action;
+        }
+
+        @Override
+        public void onAction() {
+            mAction.run();
+        }
+
+        @Override
+        public String getMessage() {
+            return mMessage;
+        }
+
+        @Override
+        public String getActionText() {
+            return mActionText;
+        }
+    }
+
     @Nullable
     public BrowseSection getCurrentSection() {
         return mCurrentSection;
     }
 
     private BrowseSection findSectionById(int sectionId) {
+        for (BrowseSection section : getRailSections()) { // HomeTube
+            if (section.getId() == sectionId) {
+                return section;
+            }
+        }
+
         for (BrowseSection section : mErrorSections) {
             if (section.getId() == sectionId) {
                 return section;
@@ -969,6 +1049,13 @@ public class BrowsePresenter extends BasePresenter<BrowseView> implements Sectio
         }
 
         int sectionIndex = -1;
+
+        for (BrowseSection section : getRailSections()) { // HomeTube
+            sectionIndex++;
+            if (section.getId() == sectionId) {
+                return sectionIndex;
+            }
+        }
 
         for (BrowseSection section : mErrorSections) {
             if (section.isEnabled()) {

@@ -12,6 +12,7 @@
     <attr name="cardSecondaryTextColor" format="reference"/>
     <attr name="cardFocusOutline" format="reference"/>
     <attr name="browseCollapsedHeadersWidth" format="dimension"/>
+    <attr name="headerFocusPill" format="reference"/>
 
     <!-- Increase spacing between items in GridView -->
     <style name="GridViewStyle" parent="Widget.Leanback.GridItems.VerticalGridView">
@@ -199,7 +200,8 @@
         <item name="cardSecondaryTextColor">@color/scheme_hometube_text_secondary</item>
         <item name="cardFocusOutline">@drawable/hometube_card_focus</item>
         <item name="browseCollapsedHeadersWidth">@dimen/hometube_rail_width</item>
-        <item name="appLogo">@mipmap/app_logo_semi_red</item>
+        <item name="headerFocusPill">@drawable/hometube_header_pill</item>
+        <item name="appLogo">@null</item>
     </style>
     <style name="App.Theme.HomeTube.Preferences" parent="App.Theme.Leanback.Preferences">
         <item name="android:colorPrimary" tools:targetApi="21">@color/scheme_hometube_background</item>

@@ -231,8 +231,17 @@ public class NavigateTitleView extends TitleView implements OnDataChange, Accoun
         mIsLanguageViewEnabled = mainUIData.isTopButtonEnabled(MainUIData.TOP_BUTTON_CHANGE_LANGUAGE);
         mIsGlobalClockEnabled = GeneralData.instance(getContext()).isGlobalClockEnabled();
 
+        // HomeTube: Search and Account live in the sidebar rail
+        if (getResources().getBoolean(R.bool.hometube_rail_actions)) {
+            mIsSearchOrbEnabled = true; // NOTE: inverted flag, true hides the search orb
+            mIsAccountViewEnabled = false;
+        }
+
         mSearchOrbView.setVisibility(mIsSearchOrbEnabled ? View.VISIBLE : View.GONE);
         mAccountView.setVisibility(mIsAccountViewEnabled ? View.VISIBLE : View.GONE);
+        if (getResources().getBoolean(R.bool.hometube_rail_actions)) {
+            mSearchOrbView.setVisibility(View.GONE);
+        }
         mLanguageView.setVisibility(mIsLanguageViewEnabled ? View.VISIBLE : View.GONE);
         mGlobalClock.setVisibility(mIsGlobalClockEnabled ? View.VISIBLE : View.GONE);
         mGlobalDate.setVisibility(mIsGlobalClockEnabled ? View.VISIBLE : View.GONE);

@@ -1,6 +1,9 @@
 package com.liskovsoft.smartyoutubetv2.tv.presenter;
 
 import android.content.Context;
+import android.content.res.ColorStateList;
+import android.graphics.Color;
+import android.graphics.PorterDuff;
 import android.graphics.drawable.ColorDrawable;
 import android.graphics.drawable.Drawable;
 import android.view.LayoutInflater;
@@ -20,6 +23,7 @@ import com.bumptech.glide.load.DataSource;
 import com.bumptech.glide.load.engine.GlideException;
 import com.bumptech.glide.request.RequestListener;
 import com.bumptech.glide.request.target.Target;
+import com.liskovsoft.sharedutils.helpers.Helpers;
 import com.liskovsoft.sharedutils.mylogger.Log;
 import com.liskovsoft.smartyoutubetv2.tv.R;
 import com.liskovsoft.smartyoutubetv2.tv.util.ViewUtil;
@@ -47,7 +51,48 @@ public class IconHeaderItemPresenter extends RowHeaderPresenter {
         View view = inflater.inflate(R.layout.icon_header_item, null);
         view.setAlpha(mUnselectedAlpha); // Initialize icons to be at half-opacity.
 
+        applyFocusPill(view);
+
         return new ViewHolder(view);
+    }
+
+    /**
+     * HomeTube: YouTube TV-like white pill behind the focused sidebar item (theme attr headerFocusPill).
+     */
+    private static void applyFocusPill(View view) {
+        Context context = view.getContext();
+        int pillResId = Helpers.getThemeAttr(context, R.attr.headerFocusPill);
+
+        if (pillResId == 0) {
+            return;
+        }
+
+        float density = context.getResources().getDisplayMetrics().density;
+        view.setPadding((int) (12 * density), (int) (8 * density), (int) (20 * density), (int) (8 * density));
+
+        ImageView iconView = view.findViewById(R.id.header_icon);
+        TextView label = view.findViewById(R.id.header_label);
+        final ColorStateList defaultTextColors = label != null ? label.getTextColors() : null;
+
+        view.setOnFocusChangeListener((v, hasFocus) -> {
+            v.setBackground(hasFocus ? ContextCompat.getDrawable(context, pillResId) : null);
+
+            if (label != null) {
+                if (hasFocus) {
+                    label.setTextColor(Color.BLACK);
+                } else if (defaultTextColors != null) {
+                    label.setTextColor(defaultTextColors);
+                }
+            }
+
+            if (iconView != null) {
+                if (hasFocus) {
+                    iconView.setColorFilter(Color.BLACK, PorterDuff.Mode.SRC_IN);
+                } else {
+                    iconView.clearColorFilter();
+                }
+            }
+        });
     }
 
     @Override
