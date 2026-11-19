@@ -4,6 +4,7 @@ import android.content.Context;
 import android.content.SharedPreferences;
 
 import com.liskovsoft.mediaserviceinterfaces.data.MediaGroup;
+import com.liskovsoft.sharedutils.locale.LocaleUpdater;
 import com.liskovsoft.smartyoutubetv2.common.app.presenters.service.SidebarService;
 import com.liskovsoft.smartyoutubetv2.common.prefs.GeneralData;
 import com.liskovsoft.smartyoutubetv2.common.prefs.MainUIData;
@@ -20,7 +21,7 @@ import com.liskovsoft.youtubeapi.service.internal.MediaServiceData;
 public final class HomeTubeDefaults {
     private static final String PREFS_NAME = "hometube_defaults";
     private static final String KEY_APPLIED_VERSION = "applied_version";
-    private static final int VERSION = 3;
+    private static final int VERSION = 4;
 
     private HomeTubeDefaults() {
     }
@@ -52,6 +53,16 @@ public final class HomeTubeDefaults {
         if (appliedVersion < 3) {
             // Static card titles (no marquee), like YouTube
             MainUIData.instance(context).setCardTextAutoScrollEnabled(false);
+        }
+
+        if (appliedVersion < 4) {
+            // Region follows the system (TV settings) instead of a manually picked country.
+            // The UI language choice is kept.
+            LocaleUpdater localeUpdater = new LocaleUpdater(context);
+            if (!localeUpdater.getPreferredCountry().isEmpty()) {
+                localeUpdater.setPreferredCountry("");
+                localeUpdater.update();
+            }
         }
 
         prefs.edit().putInt(KEY_APPLIED_VERSION, VERSION).apply();

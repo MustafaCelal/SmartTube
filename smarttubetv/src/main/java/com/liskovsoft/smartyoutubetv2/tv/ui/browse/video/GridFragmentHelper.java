@@ -78,6 +78,12 @@ public class GridFragmentHelper {
             displayWidthPx = Math.max(displayMetrics.widthPixels, displayMetrics.heightPixels);
         }
 
+        // HomeTube: the collapsed sidebar rail takes space on the left
+        android.util.TypedValue railWidth = new android.util.TypedValue();
+        if (context.getTheme().resolveAttribute(R.attr.browseCollapsedHeadersWidth, railWidth, true)) {
+            displayWidthPx -= (int) railWidth.getDimension(res.getDisplayMetrics());
+        }
+
         float cardWidthPx = res.getDimensionPixelSize(cardWidthResId) * cardScale;
         float cardSpacingPx = res.getDimensionPixelSize(R.dimen.grid_item_horizontal_spacing);
 

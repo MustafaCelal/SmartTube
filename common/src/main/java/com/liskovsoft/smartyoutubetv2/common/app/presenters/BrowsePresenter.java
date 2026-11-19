@@ -63,6 +63,7 @@ public class BrowsePresenter extends BasePresenter<BrowseView> implements Sectio
     private static final int RAIL_ACCOUNT_ID = -2002;
     private static final int RAIL_SEARCH_ID = -2001;
     private List<BrowseSection> mRailSections;
+    private int mLastContentSectionId = MediaGroup.TYPE_HOME;
     private static final String TAG = BrowsePresenter.class.getSimpleName();
     @SuppressLint("StaticFieldLeak")
     private static BrowsePresenter sInstance;
@@ -501,6 +502,10 @@ public class BrowsePresenter extends BasePresenter<BrowseView> implements Sectio
 
     @Override
     public void onSectionFocused(int sectionId) {
+        if (sectionId != RAIL_ACCOUNT_ID && sectionId != RAIL_SEARCH_ID) {
+            mLastContentSectionId = sectionId; // HomeTube: return here after a rail action
+        }
+
         saveSelectedItems(); // save previous state
         mCurrentSection = findSectionById(sectionId);
         mCurrentVideo = null; // fast scroll through the sections (fix empty selected item)
@@ -1007,6 +1012,12 @@ public class BrowsePresenter extends BasePresenter<BrowseView> implements Sectio
     public boolean onRailSectionClicked(int sectionId) {
         for (BrowseSection section : getRailSections()) {
             if (section.getId() == sectionId && section.getData() instanceof ErrorFragmentData) {
+                // Go back to the previous section, so Back from Search/Accounts lands there (not on the rail item)
+                int lastIndex = findSectionIndex(mLastContentSectionId);
+                if (getView() != null && lastIndex != -1) {
+                    getView().selectSection(lastIndex, true);
+                }
+
                 ((ErrorFragmentData) section.getData()).onAction();
                 return true;
             }
