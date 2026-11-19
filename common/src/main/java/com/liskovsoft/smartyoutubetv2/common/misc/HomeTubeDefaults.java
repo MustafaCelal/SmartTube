@@ -3,6 +3,7 @@ package com.liskovsoft.smartyoutubetv2.common.misc;
 import android.content.Context;
 import android.content.SharedPreferences;
 
+import com.liskovsoft.appupdatechecker2.AppUpdateChecker;
 import com.liskovsoft.mediaserviceinterfaces.data.MediaGroup;
 import com.liskovsoft.sharedutils.locale.LocaleUpdater;
 import com.liskovsoft.smartyoutubetv2.common.app.presenters.service.SidebarService;
@@ -21,7 +22,7 @@ import com.liskovsoft.youtubeapi.service.internal.MediaServiceData;
 public final class HomeTubeDefaults {
     private static final String PREFS_NAME = "hometube_defaults";
     private static final String KEY_APPLIED_VERSION = "applied_version";
-    private static final int VERSION = 4;
+    private static final int VERSION = 5;
 
     private HomeTubeDefaults() {
     }
@@ -63,6 +64,12 @@ public final class HomeTubeDefaults {
                 localeUpdater.setPreferredCountry("");
                 localeUpdater.update();
             }
+        }
+
+        if (appliedVersion < 5) {
+            // Updates: check on start and offer the new version right away (a dialog, not a pinned sidebar item)
+            new AppUpdateChecker(context, null).setUpdateCheckEnabled(true);
+            GeneralData.instance(context).setOldUpdateNotificationsEnabled(true);
         }
 
         prefs.edit().putInt(KEY_APPLIED_VERSION, VERSION).apply();

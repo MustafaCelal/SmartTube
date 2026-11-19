@@ -1,0 +1,7 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- HomeTube: updates come from the GitHub releases of the HomeTube fork (scripts/hometube-release.sh) -->
+    <string-array name="update_urls">
+        <item>https://github.com/MustafaCelal/SmartTube/releases/latest/download/hometube.json</item>
+    </string-array>
+</resources>

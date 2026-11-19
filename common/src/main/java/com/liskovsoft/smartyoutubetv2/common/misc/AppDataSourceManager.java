@@ -4,6 +4,7 @@ import android.content.Context;
 import com.liskovsoft.sharedutils.helpers.Helpers;
 import com.liskovsoft.smartyoutubetv2.common.R;
 import com.liskovsoft.smartyoutubetv2.common.app.models.data.SettingsItem;
+import com.liskovsoft.smartyoutubetv2.common.app.presenters.dialogs.AppUpdatePresenter;
 import com.liskovsoft.smartyoutubetv2.common.app.presenters.settings.AboutSettingsPresenter;
 import com.liskovsoft.smartyoutubetv2.common.app.presenters.settings.AboutSimpleSettingsPresenter;
 import com.liskovsoft.smartyoutubetv2.common.app.presenters.settings.AccountSettingsPresenter;
@@ -40,6 +41,13 @@ public class AppDataSourceManager {
 
     public List<SettingsItem> getSettingItems(Context context) {
         List<SettingsItem> settingItems = new ArrayList<>();
+
+        if (context.getResources().getBoolean(R.bool.hometube_rail_actions)) {
+            // HomeTube: update right from the settings page (new versions come from the HomeTube releases)
+            settingItems.add(new SettingsItem(
+                    context.getString(R.string.hometube_update),
+                    () -> AppUpdatePresenter.instance(context).start(true), R.drawable.settings_update));
+        }
 
         settingItems.add(new SettingsItem(
                 context.getString(R.string.settings_accounts), () -> AccountSettingsPresenter.instance(context).show(), R.drawable.settings_account));

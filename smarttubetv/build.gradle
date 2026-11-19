@@ -40,6 +40,9 @@ if (new File("${projectDir}/google-services.json").exists() && (getGradle().getS
     apply plugin: 'com.google.firebase.crashlytics'
 }
 
+// HomeTube: release number (see scripts/hometube-release.sh)
+def hometubeBuild = 0
+
 android {
     // FIX: Default interface methods are only supported starting with Android N (--min-api 24)
     compileOptions {
@@ -170,6 +173,9 @@ android {
         sthome {
             // HomeTube: personal build, installs side by side with the official app
             applicationId "io.github.mustafacelal.hometube"
+            // HomeTube release number: raise by one for every release (scripts/hometube-release.sh does it)
+            versionCode 3000000 + hometubeBuild
+            versionName "1." + hometubeBuild
             targetSdkVersion project.properties.compileSdkVersion
             // Library modules: use F-Droid variant (no update urls, no Firebase)
             matchingFallbacks = ["stfdroid"]
