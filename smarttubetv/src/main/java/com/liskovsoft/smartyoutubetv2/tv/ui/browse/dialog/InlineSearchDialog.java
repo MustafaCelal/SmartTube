@@ -39,9 +39,9 @@ import androidx.leanback.widget.HorizontalGridView;
 import androidx.leanback.widget.ItemBridgeAdapter;
 
 import com.liskovsoft.mediaserviceinterfaces.data.MediaGroup;
+import com.liskovsoft.mediaserviceinterfaces.data.SearchOptions;
 import com.liskovsoft.smartyoutubetv2.common.app.models.data.Video;
 import com.liskovsoft.smartyoutubetv2.common.app.models.data.VideoGroup;
-import com.liskovsoft.smartyoutubetv2.common.app.presenters.PlaybackPresenter;
 import com.liskovsoft.smartyoutubetv2.tv.presenter.RowVideoCardPresenter;
 import com.liskovsoft.youtubeapi.service.YouTubeServiceManager;
 import com.liskovsoft.smartyoutubetv2.common.app.models.search.MediaServiceSearchTagProvider;
@@ -96,10 +96,16 @@ public final class InlineSearchDialog {
     private boolean mIsSymbols;
     private View mFirstKey;
     private LinearLayout mPage;
-    private LinearLayout mVideoRow;
-    private TextView mVideoRowTitle;
-    private ArrayObjectAdapter mVideoAdapter;
+    private LinearLayout mResults;      // chips + result rows, under the keyboard
+    private LinearLayout mChips;
+    private LinearLayout mRows;
+    private android.widget.ScrollView mScroll;
     private Disposable mVideosAction;
+    private Disposable mResultsAction;
+    private String mSubmittedQuery;     // results on the page are for this query
+    private int mSearchOptions;
+    private String mRecentTitle;        // videos for the last search, shown while the field is empty
+    private List<Video> mRecentVideos;
     private final Runnable mLoadSuggestions = this::loadSuggestions;
 
     private InlineSearchDialog(Context context) {
@@ -156,7 +162,14 @@ public final class InlineSearchDialog {
         scroll.addView(page, new FrameLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.WRAP_CONTENT));
         root.addView(scroll, new FrameLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.MATCH_PARENT));
 
-        page.addView(createSearchBar(), new LinearLayout.LayoutParams(dp(560), dp(44)));
+        LinearLayout top = new LinearLayout(mContext);
+        top.setOrientation(LinearLayout.HORIZONTAL);
+        top.setGravity(Gravity.CENTER_VERTICAL);
+        top.addView(createMicButton(), new LinearLayout.LayoutParams(dp(44), dp(44)));
+        LinearLayout.LayoutParams barParams = new LinearLayout.LayoutParams(dp(520), dp(44));
+        barParams.setMarginStart(dp(12));
+        top.addView(createSearchBar(), barParams);
+        page.addView(top);
 
         LinearLayout body = new LinearLayout(mContext);
         body.setOrientation(LinearLayout.HORIZONTAL);
@@ -173,14 +186,11 @@ public final class InlineSearchDialog {
         keyboardParams.setMarginStart(dp(24));
         body.addView(keyboard, keyboardParams);
 
-        page.addView(createVideoRow(), new LinearLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.WRAP_CONTENT));
+        page.addView(createResults(), new LinearLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.WRAP_CONTENT));
+        mScroll = scroll;
 
-        // Going down to the videos scrolls the page up, like YouTube
-        root.getViewTreeObserver().addOnGlobalFocusChangeListener((oldFocus, newFocus) -> {
-            boolean inRow = newFocus != null && isDescendant(newFocus, mVideoRow);
-            // the row title moves near the top of the screen and the whole row is visible, back to the top otherwise
-            scroll.post(() -> scroll.smoothScrollTo(0, inRow ? Math.max(0, mVideoRow.getTop() - dp(40)) : 0));
-        });
+        // Going down to the results scrolls the page (the focused row near the top), back up shows the keyboard again
+        root.getViewTreeObserver().addOnGlobalFocusChangeListener((oldFocus, newFocus) -> scrollToFocus(newFocus));
 
         mDialog.setContentView(root);
 
@@ -202,6 +212,9 @@ public final class InlineSearchDialog {
             sIsShowing = false;
             if (mVideosAction != null) {
                 mVideosAction.dispose();
+            }
+            if (mResultsAction != null) {
+                mResultsAction.dispose();
             }
             mHandler.removeCallbacks(mLoadSuggestions);
             mHandler.removeCallbacks(mRetryHistory);
@@ -304,14 +317,48 @@ public final class InlineSearchDialog {
         mInput.setSelection(query.length());
     }
 
+    /**
+     * Results show on this page under the keyboard (like YouTube); up from them is the keyboard again
+     */
     private void submit(String query) {
         String trimmed = query != null ? query.trim() : "";
         if (trimmed.isEmpty()) {
             return;
         }
 
-        mDialog.dismiss();
-        SearchPresenter.instance(mContext).startSearch(trimmed);
+        if (!TextUtils.equals(getQuery(), trimmed)) {
+            setQuery(trimmed);
+        }
+        mHistory.remove(trimmed);
+        mHistory.add(0, trimmed);
+        mSearchOptions = 0;
+        runSearch(trimmed, true);
+    }
+
+    // ---------- Voice ----------
+
+    private View createMicButton() {
+        ImageView mic = new ImageView(mContext);
+        mic.setImageResource(R.drawable.lb_ic_search_mic_out);
+        mic.setScaleType(ImageView.ScaleType.CENTER_INSIDE);
+        mic.setPadding(dp(10), dp(10), dp(10), dp(10));
+        mic.setColorFilter(TEXT_COLOR, PorterDuff.Mode.SRC_IN);
+        mic.setFocusable(true);
+        mic.setClickable(true);
+        GradientDrawable normal = rounded(FIELD_COLOR, dp(22));
+        GradientDrawable focused = rounded(Color.WHITE, dp(22));
+        mic.setBackground(normal);
+        mic.setOnFocusChangeListener((v, hasFocus) -> {
+            v.setBackground(hasFocus ? focused : normal);
+            mic.setColorFilter(hasFocus ? Color.BLACK : TEXT_COLOR, PorterDuff.Mode.SRC_IN);
+            mInput.setHint(hasFocus ? R.string.hometube_voice_search : R.string.action_search);
+        });
+        mic.setOnClickListener(v -> {
+            // The TV's voice search; its results open in the search results page
+            mDialog.dismiss();
+            SearchPresenter.instance(mContext).startVoice();
+        });
+        return mic;
     }
 
     /**
@@ -491,57 +538,236 @@ public final class InlineSearchDialog {
         }));
     }
 
-    // ---------- Videos for the last search (shown while the field is empty) ----------
+    // ---------- History ----------
 
-    private View createVideoRow() {
-        mVideoRow = new LinearLayout(mContext);
-        mVideoRow.setOrientation(LinearLayout.VERTICAL);
-        mVideoRow.setVisibility(View.GONE);
-        mVideoRow.setClipChildren(false);
-        mVideoRow.setClipToPadding(false);
+    /**
+     * Long press on a recent search: remove it or clear all (YouTube TV can't do this from the search page)
+     */
+    private void showHistoryMenu(String tag) {
+        com.liskovsoft.smartyoutubetv2.common.app.presenters.AppDialogPresenter dialog =
+                com.liskovsoft.smartyoutubetv2.common.app.presenters.AppDialogPresenter.instance(mContext);
+        dialog.appendSingleButton(com.liskovsoft.smartyoutubetv2.common.app.models.playback.ui.UiOptionItem.from(
+                mContext.getString(R.string.remove_from_search_history), option -> {
+                    com.liskovsoft.smartyoutubetv2.common.misc.MediaServiceManager.instance().removeSearchTag(tag);
+                    mHistory.remove(tag);
+                    dialog.closeDialog();
+                    loadSuggestions();
+                }));
+        dialog.appendSingleButton(com.liskovsoft.smartyoutubetv2.common.app.models.playback.ui.UiOptionItem.from(
+                mContext.getString(R.string.clear_search_history), option -> {
+                    com.liskovsoft.smartyoutubetv2.common.misc.MediaServiceManager.instance().clearSearchHistory();
+                    mHistory.clear();
+                    mRecentVideos = null;
+                    dialog.closeDialog();
+                    loadSuggestions();
+                }));
+        dialog.showDialog(tag);
+    }
 
-        mVideoRowTitle = new TextView(mContext);
-        mVideoRowTitle.setTextColor(TEXT_COLOR);
-        mVideoRowTitle.setTextSize(TypedValue.COMPLEX_UNIT_SP, 20);
-        mVideoRowTitle.setTypeface(Typeface.create("sans-serif-medium", Typeface.NORMAL));
-        LinearLayout.LayoutParams titleParams = new LinearLayout.LayoutParams(ViewGroup.LayoutParams.WRAP_CONTENT, ViewGroup.LayoutParams.WRAP_CONTENT);
-        titleParams.bottomMargin = dp(12);
-        mVideoRow.addView(mVideoRowTitle, titleParams);
+    // ---------- Results under the keyboard ----------
 
-        HorizontalGridView grid = new HorizontalGridView(mContext);
-        grid.setClipChildren(false);
-        grid.setClipToPadding(false);
-        grid.setHorizontalSpacing(mContext.getResources().getDimensionPixelSize(R.dimen.grid_item_horizontal_spacing));
-        grid.setWindowAlignment(HorizontalGridView.WINDOW_ALIGN_LOW_EDGE);
-        grid.setWindowAlignmentOffsetPercent(0);
-        grid.setItemAlignmentOffsetPercent(0);
-        grid.setPadding(0, dp(8), dp(48), dp(8));
+    private static final int[][] FILTERS = {
+            {R.string.hometube_filter_all, 0},
+            {R.string.hometube_filter_newest, SearchOptions.SORT_BY_UPLOAD_DATE},
+            {R.string.hometube_filter_today, SearchOptions.UPLOAD_DATE_TODAY},
+            {R.string.hometube_filter_week, SearchOptions.UPLOAD_DATE_THIS_WEEK},
+            {R.string.hometube_filter_popular, SearchOptions.SORT_BY_VIEW_COUNT},
+            {R.string.hometube_filter_long, SearchOptions.DURATION_OVER_20},
+            {R.string.hometube_filter_live, SearchOptions.FEATURE_LIVE},
+            {R.string.hometube_filter_channels, SearchOptions.TYPE_CHANNEL},
+            {R.string.hometube_filter_playlists, SearchOptions.TYPE_PLAYLIST},
+    };
 
-        mVideoAdapter = new ArrayObjectAdapter(new RowVideoCardPresenter());
-        ItemBridgeAdapter bridge = new ItemBridgeAdapter(mVideoAdapter);
-        bridge.setAdapterListener(new ItemBridgeAdapter.AdapterListener() {
-            @Override
-            public void onBind(ItemBridgeAdapter.ViewHolder viewHolder) {
-                viewHolder.itemView.setActivated(true); // cards show their text only when activated (normally set by the row)
-                viewHolder.itemView.setOnClickListener(v -> {
-                    Object item = viewHolder.getItem();
-                    if (item instanceof Video) {
-                        mDialog.dismiss();
-                        PlaybackPresenter.instance(mContext).openVideo((Video) item);
-                    }
-                });
+    private View createResults() {
+        mResults = new LinearLayout(mContext);
+        mResults.setOrientation(LinearLayout.VERTICAL);
+        mResults.setVisibility(View.GONE);
+        mResults.setClipChildren(false);
+        mResults.setClipToPadding(false);
+
+        // Filters: something YouTube TV doesn't have
+        android.widget.HorizontalScrollView chipsScroll = new android.widget.HorizontalScrollView(mContext);
+        chipsScroll.setHorizontalScrollBarEnabled(false);
+        chipsScroll.setClipToPadding(false);
+        chipsScroll.setPadding(0, dp(4), dp(48), dp(4));
+        mChips = new LinearLayout(mContext);
+        mChips.setOrientation(LinearLayout.HORIZONTAL);
+        for (int[] filter : FILTERS) {
+            mChips.addView(createChip(mContext.getString(filter[0]), filter[1]));
+        }
+        chipsScroll.addView(mChips);
+        chipsScroll.setVisibility(View.GONE);
+        LinearLayout.LayoutParams chipsParams = new LinearLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.WRAP_CONTENT);
+        chipsParams.bottomMargin = dp(8);
+        mResults.addView(chipsScroll, chipsParams);
+
+        mRows = new LinearLayout(mContext);
+        mRows.setOrientation(LinearLayout.VERTICAL);
+        mRows.setClipChildren(false);
+        mRows.setClipToPadding(false);
+        mResults.addView(mRows, new LinearLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.WRAP_CONTENT));
+
+        return mResults;
+    }
+
+    private View createChip(String label, int options) {
+        TextView chip = new TextView(mContext);
+        chip.setText(label);
+        chip.setTag(options);
+        chip.setTextSize(TypedValue.COMPLEX_UNIT_SP, 15);
+        chip.setTypeface(Typeface.create("sans-serif-medium", Typeface.NORMAL));
+        chip.setPadding(dp(16), dp(8), dp(16), dp(8));
+        chip.setFocusable(true);
+        chip.setClickable(true);
+        chip.setOnFocusChangeListener((v, hasFocus) -> updateChip(chip));
+        chip.setOnClickListener(v -> {
+            if (mSubmittedQuery != null && mSearchOptions != options) {
+                mSearchOptions = options;
+                runSearch(mSubmittedQuery, false);
             }
         });
-        FocusHighlightHelper.setupBrowseItemFocusHighlight(bridge, FocusHighlight.ZOOM_FACTOR_SMALL, false);
-        grid.setAdapter(bridge);
-        // Fixed height: the grid is measured before the cards arrive (thumbnail 16:9 + two text blocks)
-        float scale = com.liskovsoft.smartyoutubetv2.common.prefs.MainUIData.instance(mContext).getVideoGridScale();
-        int cardWidth = (int) (mContext.getResources().getDimensionPixelSize(R.dimen.hometube_row_card_width) * scale);
-        int gridHeight = cardWidth * 9 / 16 + dp(120);
-        mVideoRow.addView(grid, new LinearLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, gridHeight));
-
-        return mVideoRow;
+        LinearLayout.LayoutParams params = new LinearLayout.LayoutParams(ViewGroup.LayoutParams.WRAP_CONTENT, ViewGroup.LayoutParams.WRAP_CONTENT);
+        params.setMarginEnd(dp(10));
+        chip.setLayoutParams(params);
+        updateChip(chip);
+        return chip;
     }
+
+    private void updateChip(TextView chip) {
+        boolean active = chip.getTag() instanceof Integer && (Integer) chip.getTag() == mSearchOptions;
+        boolean focused = chip.hasFocus();
+        GradientDrawable background = rounded(focused ? Color.WHITE : active ? 0xFFD9D9D9 : FIELD_COLOR, dp(18));
+        chip.setBackground(background);
+        chip.setTextColor(focused || active ? Color.BLACK : TEXT_COLOR);
+    }
+
+    private void updateChips() {
+        for (int i = 0; i < mChips.getChildCount(); i++) {
+            updateChip((TextView) mChips.getChildAt(i));
+        }
+    }
+
+    /**
+     * Results: the focused block (filters or a row) near the top of the screen. Keyboard: back to the top.
+     */
+    private void scrollToFocus(View focused) {
+        int target = 0;
+        if (focused != null && isDescendant(focused, mResults)) {
+            View block = focused;
+            while (block.getParent() != mRows && block.getParent() != mResults && block.getParent() instanceof View) {
+                block = (View) block.getParent();
+            }
+            int blockTop = block.getParent() == mRows ? mRows.getTop() + block.getTop() : block.getTop();
+            target = Math.max(0, mResults.getTop() + blockTop - dp(32));
+        }
+        int scrollTarget = target;
+        mScroll.post(() -> mScroll.smoothScrollTo(0, scrollTarget));
+    }
+
+    private void runSearch(String query, boolean focusResults) {
+        mSubmittedQuery = query;
+        updateChips();
+        mHandler.removeCallbacks(mLoadSuggestions);
+        if (mResultsAction != null) {
+            mResultsAction.dispose();
+        }
+
+        // Keep the page height while reloading (a filter), otherwise the page jumps to the top
+        mRows.setMinimumHeight(focusResults ? 0 : mRows.getHeight());
+        mRows.removeAllViews();
+        TextView loading = createRowTitle(mContext.getString(R.string.hometube_searching));
+        mRows.addView(loading);
+        ((View) mChips.getParent()).setVisibility(View.VISIBLE);
+        mResults.setVisibility(View.VISIBLE);
+
+        io.reactivex.Observable<List<MediaGroup>> observable = mSearchOptions == 0 ?
+                YouTubeServiceManager.instance().getContentService().getSearchObserve(query) :
+                YouTubeServiceManager.instance().getContentService().getSearchObserve(query, mSearchOptions);
+        mResultsAction = observable.subscribe(
+                groups -> mRows.post(() -> showResults(query, groups, focusResults)),
+                error -> mRows.post(() -> {
+                    if (TextUtils.equals(query, mSubmittedQuery)) {
+                        loading.setText(R.string.hometube_search_failed);
+                    }
+                }));
+    }
+
+    private void showResults(String query, List<MediaGroup> groups, boolean focusResults) {
+        if (!mDialog.isShowing() || !TextUtils.equals(query, mSubmittedQuery)) {
+            return;
+        }
+
+        mRows.removeAllViews();
+        mRows.setMinimumHeight(0);
+        boolean isFirst = true;
+        if (groups != null) {
+            for (MediaGroup group : groups) {
+                List<Video> videos = toVideos(group);
+                if (videos.isEmpty() || mRows.getChildCount() >= 5) {
+                    continue;
+                }
+                String title = isFirst || TextUtils.isEmpty(group.getTitle()) ?
+                        mContext.getString(R.string.hometube_search_results_for, query) : group.getTitle();
+                mRows.addView(createRow(title, videos));
+                isFirst = false;
+            }
+        }
+
+        if (mRows.getChildCount() == 0) {
+            mRows.addView(createRowTitle(mContext.getString(R.string.hometube_search_no_results)));
+            return;
+        }
+
+        if (focusResults) {
+            View first = findFirstCard();
+            if (first != null) {
+                first.requestFocus();
+            }
+        } else {
+            mRows.post(() -> scrollToFocus(mDialog.getCurrentFocus())); // stay at the filters
+        }
+    }
+
+    private View findFirstCard() {
+        if (mRows.getChildCount() == 0) {
+            return null;
+        }
+        View row = mRows.getChildAt(0);
+        if (row instanceof ViewGroup && ((ViewGroup) row).getChildCount() > 1) {
+            View grid = ((ViewGroup) row).getChildAt(1);
+            if (grid instanceof ViewGroup && ((ViewGroup) grid).getChildCount() > 0) {
+                return ((ViewGroup) grid).getChildAt(0);
+            }
+            return grid;
+        }
+        return null;
+    }
+
+    private void clearResults() {
+        mSubmittedQuery = null;
+        mSearchOptions = 0;
+        if (mResultsAction != null) {
+            mResultsAction.dispose();
+        }
+        mRows.removeAllViews();
+        ((View) mChips.getParent()).setVisibility(View.GONE);
+        mResults.setVisibility(View.GONE);
+    }
+
+    private static List<Video> toVideos(MediaGroup group) {
+        List<Video> videos = new ArrayList<>();
+        if (group == null || group.getType() == MediaGroup.TYPE_SHORTS || group.getMediaItems() == null) {
+            return videos;
+        }
+        for (Video video : VideoGroup.from(group).getVideos()) {
+            if (!video.isShorts) {
+                videos.add(video);
+            }
+        }
+        return videos;
+    }
+
+    // ---------- Videos for the last search (shown while the field is empty) ----------
 
     private void loadVideos(String query) {
         loadVideos(query, true);
@@ -549,7 +775,17 @@ public final class InlineSearchDialog {
 
     private void loadVideos(String query, boolean retry) {
         mVideosAction = YouTubeServiceManager.instance().getContentService().getSearchObserve(query)
-                .subscribe(groups -> mVideoRow.post(() -> showVideos(query, groups)), error -> {
+                .subscribe(groups -> mRows.post(() -> {
+                    for (MediaGroup group : groups != null ? groups : new ArrayList<MediaGroup>()) {
+                        List<Video> videos = toVideos(group);
+                        if (videos.size() >= 3) {
+                            mRecentTitle = mContext.getString(R.string.hometube_search_recent_videos, query);
+                            mRecentVideos = videos;
+                            showRecentVideos();
+                            return;
+                        }
+                    }
+                }), error -> {
                     if (retry) { // one more try, otherwise the page works without the row
                         mHandler.postDelayed(() -> {
                             if (mDialog.isShowing()) {
@@ -560,29 +796,75 @@ public final class InlineSearchDialog {
                 });
     }
 
-    private void showVideos(String query, List<MediaGroup> groups) {
-        if (!mDialog.isShowing() || groups == null) {
+    private void showRecentVideos() {
+        if (mSubmittedQuery != null || !getQuery().trim().isEmpty() || mRecentVideos == null) {
             return;
         }
+        mRows.removeAllViews();
+        mRows.addView(createRow(mRecentTitle, mRecentVideos));
+        ((View) mChips.getParent()).setVisibility(View.GONE);
+        mResults.setVisibility(View.VISIBLE);
+    }
 
-        for (MediaGroup group : groups) {
-            if (group == null || group.getType() == MediaGroup.TYPE_SHORTS || group.getMediaItems() == null) {
-                continue;
+    // ---------- Rows ----------
+
+    private TextView createRowTitle(String title) {
+        TextView view = new TextView(mContext);
+        view.setText(title);
+        view.setTextColor(TEXT_COLOR);
+        view.setTextSize(TypedValue.COMPLEX_UNIT_SP, 20);
+        view.setTypeface(Typeface.create("sans-serif-medium", Typeface.NORMAL));
+        view.setPadding(0, dp(16), 0, dp(12));
+        return view;
+    }
+
+    private View createRow(String title, List<Video> videos) {
+        LinearLayout row = new LinearLayout(mContext);
+        row.setOrientation(LinearLayout.VERTICAL);
+        row.setClipChildren(false);
+        row.setClipToPadding(false);
+        row.addView(createRowTitle(title));
+
+        HorizontalGridView grid = new HorizontalGridView(mContext);
+        grid.setClipChildren(false);
+        grid.setClipToPadding(false);
+        grid.setHorizontalSpacing(mContext.getResources().getDimensionPixelSize(R.dimen.grid_item_horizontal_spacing));
+        grid.setWindowAlignment(HorizontalGridView.WINDOW_ALIGN_LOW_EDGE);
+        grid.setWindowAlignmentOffsetPercent(0);
+        grid.setItemAlignmentOffsetPercent(0);
+        grid.setPadding(0, dp(8), dp(48), dp(8));
+
+        ArrayObjectAdapter adapter = new ArrayObjectAdapter(new RowVideoCardPresenter());
+        adapter.addAll(0, videos);
+        ItemBridgeAdapter bridge = new ItemBridgeAdapter(adapter);
+        bridge.setAdapterListener(new ItemBridgeAdapter.AdapterListener() {
+            @Override
+            public void onBind(ItemBridgeAdapter.ViewHolder viewHolder) {
+                viewHolder.itemView.setActivated(true); // cards show their text only when activated (normally set by the row)
+                viewHolder.itemView.setOnClickListener(v -> {
+                    Object item = viewHolder.getItem();
+                    if (item instanceof Video) {
+                        // Video, channel or playlist; back returns to this page with the results
+                        com.liskovsoft.smartyoutubetv2.common.app.presenters.dialogs.VideoActionPresenter.instance(mContext).apply((Video) item);
+                    }
+                });
+                viewHolder.itemView.setOnLongClickListener(v -> {
+                    Object item = viewHolder.getItem();
+                    if (item instanceof Video) {
+                        com.liskovsoft.smartyoutubetv2.common.app.presenters.dialogs.menu.VideoMenuPresenter.instance(mContext).showMenu((Video) item);
+                    }
+                    return true;
+                });
             }
-            List<Video> videos = new ArrayList<>();
-            for (Video video : VideoGroup.from(group).getVideos()) {
-                if (video.hasVideo() && !video.isShorts) {
-                    videos.add(video);
-                }
-            }
-            if (videos.size() >= 3) {
-                mVideoAdapter.clear();
-                mVideoAdapter.addAll(0, videos);
-                mVideoRowTitle.setText(mContext.getString(R.string.hometube_search_recent_videos, query));
-                mVideoRow.setVisibility(getQuery().trim().isEmpty() ? View.VISIBLE : View.GONE);
-                return;
-            }
-        }
+        });
+        FocusHighlightHelper.setupBrowseItemFocusHighlight(bridge, FocusHighlight.ZOOM_FACTOR_SMALL, false);
+        grid.setAdapter(bridge);
+
+        // Fixed height: the grid is measured before the cards arrive (thumbnail 16:9 + two text blocks)
+        float scale = com.liskovsoft.smartyoutubetv2.common.prefs.MainUIData.instance(mContext).getVideoGridScale();
+        int cardWidth = (int) (mContext.getResources().getDimensionPixelSize(R.dimen.hometube_row_card_width) * scale);
+        row.addView(grid, new LinearLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, cardWidth * 9 / 16 + dp(120)));
+        return row;
     }
 
     private static boolean isDescendant(View view, View parent) {
@@ -599,8 +881,17 @@ public final class InlineSearchDialog {
     private void loadSuggestions() {
         String query = getQuery().trim();
 
-        // Videos only while nothing is typed (like YouTube)
-        mVideoRow.setVisibility(query.isEmpty() && mVideoAdapter.size() > 0 ? View.VISIBLE : View.GONE);
+        // Typing again replaces the results with suggestions (like YouTube)
+        if (mSubmittedQuery != null && !TextUtils.equals(query, mSubmittedQuery)) {
+            clearResults();
+        }
+        if (mSubmittedQuery == null) {
+            if (query.isEmpty()) {
+                showRecentVideos();
+            } else {
+                mResults.setVisibility(View.GONE);
+            }
+        }
 
         if (query.isEmpty()) {
             showItems(new ArrayList<>(mHistory.subList(0, Math.min(mHistory.size(), MAX_ITEMS))), mHistory, "");
@@ -670,6 +961,12 @@ public final class InlineSearchDialog {
             icon.setColorFilter(hasFocus ? Color.BLACK : TEXT_COLOR, PorterDuff.Mode.SRC_IN);
         });
         item.setOnClickListener(v -> submit(text));
+        if (isHistory) {
+            item.setOnLongClickListener(v -> {
+                showHistoryMenu(text);
+                return true;
+            });
+        }
 
         return item;
     }

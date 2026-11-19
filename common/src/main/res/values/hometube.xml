@@ -20,4 +20,18 @@
     <string name="hometube_key_space">Space</string>
     <string name="hometube_key_clear">Clear</string>
     <string name="hometube_search_recent_videos">Because you searched for \"%s\"</string>
+    <string name="hometube_voice_search">Voice search</string>
+    <string name="hometube_searching">Searching…</string>
+    <string name="hometube_search_failed">Search failed, try again</string>
+    <string name="hometube_search_no_results">No results</string>
+    <string name="hometube_search_results_for">Results for \"%s\"</string>
+    <string name="hometube_filter_all">All</string>
+    <string name="hometube_filter_newest">Newest</string>
+    <string name="hometube_filter_today">Today</string>
+    <string name="hometube_filter_week">This week</string>
+    <string name="hometube_filter_popular">Most viewed</string>
+    <string name="hometube_filter_long">Long (20+ min)</string>
+    <string name="hometube_filter_live">Live</string>
+    <string name="hometube_filter_channels">Channels</string>
+    <string name="hometube_filter_playlists">Playlists</string>
 </resources>

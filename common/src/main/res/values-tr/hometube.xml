@@ -18,4 +18,18 @@
     <string name="hometube_key_space">Boşluk</string>
     <string name="hometube_key_clear">Temizle</string>
     <string name="hometube_search_recent_videos">\"%s\" aramana göre</string>
+    <string name="hometube_voice_search">Sesli arama</string>
+    <string name="hometube_searching">Aranıyor…</string>
+    <string name="hometube_search_failed">Arama yapılamadı, tekrar dene</string>
+    <string name="hometube_search_no_results">Sonuç bulunamadı</string>
+    <string name="hometube_search_results_for">\"%s\" için sonuçlar</string>
+    <string name="hometube_filter_all">Tümü</string>
+    <string name="hometube_filter_newest">En yeni</string>
+    <string name="hometube_filter_today">Bugün</string>
+    <string name="hometube_filter_week">Bu hafta</string>
+    <string name="hometube_filter_popular">En çok izlenen</string>
+    <string name="hometube_filter_long">Uzun (20+ dk)</string>
+    <string name="hometube_filter_live">Canlı</string>
+    <string name="hometube_filter_channels">Kanallar</string>
+    <string name="hometube_filter_playlists">Oynatma listeleri</string>
 </resources>
