@@ -22,7 +22,7 @@ import com.liskovsoft.youtubeapi.service.internal.MediaServiceData;
 public final class HomeTubeDefaults {
     private static final String PREFS_NAME = "hometube_defaults";
     private static final String KEY_APPLIED_VERSION = "applied_version";
-    private static final int VERSION = 5;
+    private static final int VERSION = 6;
 
     private HomeTubeDefaults() {
     }
@@ -66,10 +66,9 @@ public final class HomeTubeDefaults {
             }
         }
 
-        if (appliedVersion < 5) {
-            // Updates: check on start and offer the new version right away (a dialog, not a pinned sidebar item)
-            new AppUpdateChecker(context, null).setUpdateCheckEnabled(true);
-            GeneralData.instance(context).setOldUpdateNotificationsEnabled(true);
+        if (appliedVersion < 6) {
+            // Updates: no check on start, only when the user presses Settings > Update
+            new AppUpdateChecker(context, null).setUpdateCheckEnabled(false);
         }
 
         prefs.edit().putInt(KEY_APPLIED_VERSION, VERSION).apply();
