@@ -25,4 +25,7 @@
     </style>
     <dimen name="lb_browse_headers_width">300dp</dimen>
     <dimen name="lb_browse_rows_margin_start">300dp</dimen>
+
+    <!-- HomeTube: empty/error screens use the same background as the rail (no two-tone look) -->
+    <color name="lb_error_background_color_translucent">#F20F0F0F</color>
 </resources>

@@ -768,9 +768,35 @@ public class BrowsePresenter extends BasePresenter<BrowseView> implements Sectio
                         error -> {
                             Log.e(TAG, "updateRowsHeader error: %s", error.getMessage());
                             handleLoadError(error);
-                        }, () -> handleLoadError(null));
+                        }, () -> {
+                            if (!tryEmptyHomeFallback(section, groups)) {
+                                handleLoadError(null);
+                            }
+                        });
 
         mActions.add(updateAction);
+    }
+
+    /**
+     * HomeTube: signed-out Home is often empty ("Sign in" screen). Show Music rows inside Home instead,
+     * like upstream does on the first run (Music isn't in the HomeTube sidebar).
+     */
+    private boolean tryEmptyHomeFallback(BrowseSection section, Observable<List<MediaGroup>> groups) {
+        if (getView() == null || getContext() == null || section.getId() != MediaGroup.TYPE_HOME ||
+                !getContext().getResources().getBoolean(R.bool.hometube_rail_actions) ||
+                !getView().isEmpty() || getSignInService().isSigned()) {
+            return false;
+        }
+
+        Observable<List<MediaGroup>> music = mRowMapping.get(MediaGroup.TYPE_MUSIC);
+
+        if (music == null || music == groups) {
+            return false; // already tried
+        }
+
+        Log.d(TAG, "Home is empty, showing Music rows instead");
+        updateVideoRows(section, music);
+        return true;
     }
 
     private void updateVideoGrid(BrowseSection section, Observable<MediaGroup> group, int column) {

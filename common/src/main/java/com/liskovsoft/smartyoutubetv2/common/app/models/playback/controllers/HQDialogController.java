@@ -46,6 +46,17 @@ public class HQDialogController extends BasePlayerController {
     private void onHighQualityClicked() {
         fitVideoIntoDialog();
 
+        if (getContext().getResources().getBoolean(R.bool.hometube_rail_actions)) {
+            // HomeTube: YouTube-like short menu (quality, audio track, sleep timer).
+            // Technical options stay in the app settings.
+            addVideoQualityCategory();
+            addAudioLanguage();
+            addSleepTimerCategory();
+            appendOptions(mCategoriesInt); // no external categories (e.g. AFR)
+            mAppDialogPresenter.showDialog(getContext().getString(R.string.hometube_player_settings), this::onDialogHide);
+            return;
+        }
+
         addQualityCategories();
         addAudioLanguage();
         addPresetsCategory();
@@ -61,6 +72,18 @@ public class HQDialogController extends BasePlayerController {
         appendOptions(mCategories);
 
         mAppDialogPresenter.showDialog(getContext().getString(R.string.playback_settings), this::onDialogHide);
+    }
+
+    private void addVideoQualityCategory() {
+        if (getPlayer() == null) {
+            return;
+        }
+
+        addCategoryInt(OptionCategory.from(
+                VIDEO_FORMATS_ID,
+                OptionCategory.TYPE_RADIO_LIST,
+                getContext().getString(R.string.hometube_quality),
+                UiOptionItem.from(getPlayer().getVideoFormats(), this::selectFormatOption, getContext().getString(R.string.option_disabled))));
     }
 
     private void addQualityCategories() {

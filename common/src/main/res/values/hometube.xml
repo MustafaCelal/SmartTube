@@ -4,4 +4,6 @@
     <bool name="hometube_rail_actions">false</bool>
     <string name="hometube_search_message">Search for videos, channels and playlists</string>
     <string name="hometube_account_message">Switch account or add a new one</string>
+    <string name="hometube_player_settings">Settings</string>
+    <string name="hometube_quality">Quality</string>
 </resources>

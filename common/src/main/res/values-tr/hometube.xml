@@ -2,4 +2,6 @@
 <resources>
     <string name="hometube_search_message">Videoları, kanalları ve oynatma listelerini arayın</string>
     <string name="hometube_account_message">Hesabınızı seçin veya yeni bir hesap ekleyin</string>
+    <string name="hometube_player_settings">Ayarlar</string>
+    <string name="hometube_quality">Kalite</string>
 </resources>

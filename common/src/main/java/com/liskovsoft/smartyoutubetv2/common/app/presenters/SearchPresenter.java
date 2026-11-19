@@ -4,6 +4,7 @@ import android.annotation.SuppressLint;
 import android.content.Context;
 import com.liskovsoft.mediaserviceinterfaces.ContentService;
 import com.liskovsoft.mediaserviceinterfaces.data.MediaGroup;
+import com.liskovsoft.youtubeapi.service.internal.MediaServiceData;
 import com.liskovsoft.mediaserviceinterfaces.data.SearchOptions;
 import com.liskovsoft.sharedutils.mylogger.Log;
 import com.liskovsoft.sharedutils.rx.RxHelper;
@@ -185,6 +186,9 @@ public class SearchPresenter extends BasePresenter<SearchView> implements VideoG
                             Log.d(TAG, "Receiving results for '%s'", searchText);
                             for (MediaGroup mediaGroup : mediaGroups) {
                                 VideoGroup group = VideoGroup.from(mediaGroup);
+                                if (isHiddenShortsShelf(group)) { // HomeTube
+                                    continue;
+                                }
                                 startPlayFirstVideo(group);
                                 getView().updateSearch(group);
                                 mBrowseProcessor.process(group);
@@ -202,6 +206,18 @@ public class SearchPresenter extends BasePresenter<SearchView> implements VideoG
                             }
                         }
                 );
+    }
+
+    /**
+     * HomeTube: drop the "Shorts" shelf from search results when Shorts are hidden in search.<br/>
+     * Items of that shelf aren't marked as Shorts, so the per-item filter doesn't catch them.
+     */
+    private static boolean isHiddenShortsShelf(VideoGroup group) {
+        if (group == null || !MediaServiceData.instance().isContentHidden(MediaServiceData.CONTENT_SHORTS_SEARCH)) {
+            return false;
+        }
+
+        return group.getType() == MediaGroup.TYPE_SHORTS || "shorts".equalsIgnoreCase(group.getTitle() != null ? group.getTitle().trim() : null);
     }
 
     private void continueGroup(VideoGroup group) {
