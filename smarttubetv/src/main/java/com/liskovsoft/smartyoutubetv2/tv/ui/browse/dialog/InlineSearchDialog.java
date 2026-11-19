@@ -222,6 +222,8 @@ public final class InlineSearchDialog {
         bar.setGravity(Gravity.CENTER_VERTICAL);
         bar.setPadding(dp(18), 0, dp(18), 0);
         bar.setBackground(rounded(FIELD_COLOR, dp(22)));
+        bar.setClickable(true);
+        bar.setOnClickListener(v -> openSystemKeyboard()); // touch / mouse on the bar
 
         ImageView icon = new ImageView(mContext);
         icon.setImageResource(R.drawable.icon_hometube_search);
@@ -241,12 +243,29 @@ public final class InlineSearchDialog {
         mInput.setTypeface(Typeface.create("sans-serif-medium", Typeface.NORMAL));
         mInput.setBackground(null);
         mInput.setPadding(0, 0, 0, 0);
-        // Typing is done with the on-screen keys below; the TV keyboard only on request
-        mInput.setFocusable(false);
-        mInput.setFocusableInTouchMode(false);
+        // Reachable with the remote (up from the keys). Moving onto it doesn't pop up the TV keyboard,
+        // OK on it does (voice typing, other languages, or a remote app/keyboard typing into it)
+        mInput.setFocusable(true);
+        mInput.setFocusableInTouchMode(true);
         if (Build.VERSION.SDK_INT >= 21) {
             mInput.setShowSoftInputOnFocus(false);
         }
+        GradientDrawable barNormal = rounded(FIELD_COLOR, dp(22));
+        GradientDrawable barFocused = rounded(0xFF3A3A3A, dp(22));
+        barFocused.setStroke(dp(2), Color.WHITE);
+        mInput.setOnFocusChangeListener((v, hasFocus) -> {
+            bar.setBackground(hasFocus ? barFocused : barNormal);
+            icon.setColorFilter(hasFocus ? TEXT_COLOR : SECONDARY_COLOR, PorterDuff.Mode.SRC_IN);
+        });
+        mInput.setOnClickListener(v -> openSystemKeyboard());
+        mInput.setOnKeyListener((v, keyCode, event) -> {
+            if (event.getAction() == KeyEvent.ACTION_UP &&
+                    (keyCode == KeyEvent.KEYCODE_DPAD_CENTER || keyCode == KeyEvent.KEYCODE_ENTER || keyCode == KeyEvent.KEYCODE_NUMPAD_ENTER)) {
+                openSystemKeyboard();
+                return true;
+            }
+            return false;
+        });
         mInput.addTextChangedListener(new TextWatcher() {
             @Override
             public void beforeTextChanged(CharSequence s, int start, int count, int after) {
@@ -299,11 +318,6 @@ public final class InlineSearchDialog {
      * Switch to the TV's own keyboard (voice typing, other languages)
      */
     private void openSystemKeyboard() {
-        mInput.setFocusable(true);
-        mInput.setFocusableInTouchMode(true);
-        if (Build.VERSION.SDK_INT >= 21) {
-            mInput.setShowSoftInputOnFocus(true);
-        }
         mInput.requestFocus();
         InputMethodManager imm = (InputMethodManager) mContext.getSystemService(Context.INPUT_METHOD_SERVICE);
         if (imm != null) {
