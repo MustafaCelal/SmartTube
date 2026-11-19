@@ -17,4 +17,5 @@
     <string name="hometube_advanced">Gelişmiş</string>
     <string name="hometube_key_space">Boşluk</string>
     <string name="hometube_key_clear">Temizle</string>
+    <string name="hometube_search_recent_videos">\"%s\" aramana göre</string>
 </resources>

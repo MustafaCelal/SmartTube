@@ -19,4 +19,5 @@
     <string name="hometube_advanced">Advanced</string>
     <string name="hometube_key_space">Space</string>
     <string name="hometube_key_clear">Clear</string>
+    <string name="hometube_search_recent_videos">Because you searched for \"%s\"</string>
 </resources>

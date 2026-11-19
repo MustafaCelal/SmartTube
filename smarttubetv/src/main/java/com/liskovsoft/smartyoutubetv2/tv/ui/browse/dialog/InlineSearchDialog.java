@@ -32,6 +32,18 @@ import android.widget.ImageView;
 import android.widget.LinearLayout;
 import android.widget.TextView;
 
+import androidx.leanback.widget.ArrayObjectAdapter;
+import androidx.leanback.widget.FocusHighlight;
+import androidx.leanback.widget.FocusHighlightHelper;
+import androidx.leanback.widget.HorizontalGridView;
+import androidx.leanback.widget.ItemBridgeAdapter;
+
+import com.liskovsoft.mediaserviceinterfaces.data.MediaGroup;
+import com.liskovsoft.smartyoutubetv2.common.app.models.data.Video;
+import com.liskovsoft.smartyoutubetv2.common.app.models.data.VideoGroup;
+import com.liskovsoft.smartyoutubetv2.common.app.presenters.PlaybackPresenter;
+import com.liskovsoft.smartyoutubetv2.tv.presenter.RowVideoCardPresenter;
+import com.liskovsoft.youtubeapi.service.YouTubeServiceManager;
 import com.liskovsoft.smartyoutubetv2.common.app.models.search.MediaServiceSearchTagProvider;
 import com.liskovsoft.smartyoutubetv2.common.app.models.search.vineyard.Tag;
 import com.liskovsoft.smartyoutubetv2.common.app.presenters.SearchPresenter;
@@ -40,6 +52,8 @@ import com.liskovsoft.smartyoutubetv2.tv.R;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Locale;
+
+import io.reactivex.disposables.Disposable;
 
 /**
  * HomeTube: full page search, YouTube TV-like.<br/>
@@ -81,6 +95,11 @@ public final class InlineSearchDialog {
     private TextView mModeKey;
     private boolean mIsSymbols;
     private View mFirstKey;
+    private LinearLayout mPage;
+    private LinearLayout mVideoRow;
+    private TextView mVideoRowTitle;
+    private ArrayObjectAdapter mVideoAdapter;
+    private Disposable mVideosAction;
     private final Runnable mLoadSuggestions = this::loadSuggestions;
 
     private InlineSearchDialog(Context context) {
@@ -113,15 +132,24 @@ public final class InlineSearchDialog {
         root.setBackgroundColor(0xFF0F0F0F);
 
         LinearLayout page = new LinearLayout(mContext);
+        mPage = page;
         page.setOrientation(LinearLayout.VERTICAL);
+        page.setClipToPadding(false); // the focused (zoomed) card may go a bit beyond the left edge
+        page.setClipChildren(false);
         page.setPadding(dp(80), dp(32), dp(48), dp(24));
-        root.addView(page, new FrameLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.MATCH_PARENT));
+        // The page is taller than the screen (videos at the bottom): scrollable, moved by the code below
+        android.widget.ScrollView scroll = new android.widget.ScrollView(mContext);
+        scroll.setVerticalScrollBarEnabled(false);
+        scroll.setFocusable(false);
+        scroll.setSmoothScrollingEnabled(true);
+        scroll.addView(page, new FrameLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.WRAP_CONTENT));
+        root.addView(scroll, new FrameLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.MATCH_PARENT));
 
         page.addView(createSearchBar(), new LinearLayout.LayoutParams(dp(560), dp(44)));
 
         LinearLayout body = new LinearLayout(mContext);
         body.setOrientation(LinearLayout.HORIZONTAL);
-        LinearLayout.LayoutParams bodyParams = new LinearLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, 0, 1f);
+        LinearLayout.LayoutParams bodyParams = new LinearLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, dp(330));
         bodyParams.topMargin = dp(24);
         page.addView(body, bodyParams);
 
@@ -133,6 +161,15 @@ public final class InlineSearchDialog {
         LinearLayout.LayoutParams keyboardParams = new LinearLayout.LayoutParams(ViewGroup.LayoutParams.WRAP_CONTENT, ViewGroup.LayoutParams.WRAP_CONTENT);
         keyboardParams.setMarginStart(dp(24));
         body.addView(keyboard, keyboardParams);
+
+        page.addView(createVideoRow(), new LinearLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.WRAP_CONTENT));
+
+        // Going down to the videos scrolls the page up, like YouTube
+        root.getViewTreeObserver().addOnGlobalFocusChangeListener((oldFocus, newFocus) -> {
+            boolean inRow = newFocus != null && isDescendant(newFocus, mVideoRow);
+            // the row title moves near the top of the screen and the whole row is visible, back to the top otherwise
+            scroll.post(() -> scroll.smoothScrollTo(0, inRow ? Math.max(0, mVideoRow.getTop() - dp(40)) : 0));
+        });
 
         mDialog.setContentView(root);
 
@@ -152,7 +189,11 @@ public final class InlineSearchDialog {
 
         mDialog.setOnDismissListener(d -> {
             sIsShowing = false;
+            if (mVideosAction != null) {
+                mVideosAction.dispose();
+            }
             mHandler.removeCallbacks(mLoadSuggestions);
+            mHandler.removeCallbacks(mRetryHistory);
             if (onClosed != null) {
                 onClosed.run();
             }
@@ -391,8 +432,23 @@ public final class InlineSearchDialog {
 
     // ---------- Recent searches and suggestions ----------
 
+    private int mHistoryTries;
+    private boolean mIsHistoryLoaded;
+    private final Runnable mRetryHistory = this::loadHistory;
+
     private void loadHistory() {
+        // The request may fail without a callback (network hiccup): try again a couple of times
+        if (mIsHistoryLoaded || mHistoryTries++ >= 3) {
+            return;
+        }
+        mHandler.postDelayed(mRetryHistory, 3_000);
+
         mProvider.search("", results -> mList.post(() -> {
+            if (mIsHistoryLoaded) {
+                return;
+            }
+            mIsHistoryLoaded = true;
+            mHandler.removeCallbacks(mRetryHistory);
             mHistory.clear();
             if (results != null) {
                 for (Tag tag : results) {
@@ -404,11 +460,122 @@ public final class InlineSearchDialog {
             if (getQuery().trim().isEmpty()) {
                 showItems(new ArrayList<>(mHistory.subList(0, Math.min(mHistory.size(), MAX_ITEMS))), mHistory, "");
             }
+            if (!mHistory.isEmpty()) {
+                loadVideos(mHistory.get(0));
+            }
         }));
+    }
+
+    // ---------- Videos for the last search (shown while the field is empty) ----------
+
+    private View createVideoRow() {
+        mVideoRow = new LinearLayout(mContext);
+        mVideoRow.setOrientation(LinearLayout.VERTICAL);
+        mVideoRow.setVisibility(View.GONE);
+        mVideoRow.setClipChildren(false);
+        mVideoRow.setClipToPadding(false);
+
+        mVideoRowTitle = new TextView(mContext);
+        mVideoRowTitle.setTextColor(TEXT_COLOR);
+        mVideoRowTitle.setTextSize(TypedValue.COMPLEX_UNIT_SP, 20);
+        mVideoRowTitle.setTypeface(Typeface.create("sans-serif-medium", Typeface.NORMAL));
+        LinearLayout.LayoutParams titleParams = new LinearLayout.LayoutParams(ViewGroup.LayoutParams.WRAP_CONTENT, ViewGroup.LayoutParams.WRAP_CONTENT);
+        titleParams.bottomMargin = dp(12);
+        mVideoRow.addView(mVideoRowTitle, titleParams);
+
+        HorizontalGridView grid = new HorizontalGridView(mContext);
+        grid.setClipChildren(false);
+        grid.setClipToPadding(false);
+        grid.setHorizontalSpacing(mContext.getResources().getDimensionPixelSize(R.dimen.grid_item_horizontal_spacing));
+        grid.setWindowAlignment(HorizontalGridView.WINDOW_ALIGN_LOW_EDGE);
+        grid.setWindowAlignmentOffsetPercent(0);
+        grid.setItemAlignmentOffsetPercent(0);
+        grid.setPadding(0, dp(8), dp(48), dp(8));
+
+        mVideoAdapter = new ArrayObjectAdapter(new RowVideoCardPresenter());
+        ItemBridgeAdapter bridge = new ItemBridgeAdapter(mVideoAdapter);
+        bridge.setAdapterListener(new ItemBridgeAdapter.AdapterListener() {
+            @Override
+            public void onBind(ItemBridgeAdapter.ViewHolder viewHolder) {
+                viewHolder.itemView.setActivated(true); // cards show their text only when activated (normally set by the row)
+                viewHolder.itemView.setOnClickListener(v -> {
+                    Object item = viewHolder.getItem();
+                    if (item instanceof Video) {
+                        mDialog.dismiss();
+                        PlaybackPresenter.instance(mContext).openVideo((Video) item);
+                    }
+                });
+            }
+        });
+        FocusHighlightHelper.setupBrowseItemFocusHighlight(bridge, FocusHighlight.ZOOM_FACTOR_SMALL, false);
+        grid.setAdapter(bridge);
+        // Fixed height: the grid is measured before the cards arrive (thumbnail 16:9 + two text blocks)
+        float scale = com.liskovsoft.smartyoutubetv2.common.prefs.MainUIData.instance(mContext).getVideoGridScale();
+        int cardWidth = (int) (mContext.getResources().getDimensionPixelSize(R.dimen.hometube_row_card_width) * scale);
+        int gridHeight = cardWidth * 9 / 16 + dp(120);
+        mVideoRow.addView(grid, new LinearLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, gridHeight));
+
+        return mVideoRow;
+    }
+
+    private void loadVideos(String query) {
+        loadVideos(query, true);
+    }
+
+    private void loadVideos(String query, boolean retry) {
+        mVideosAction = YouTubeServiceManager.instance().getContentService().getSearchObserve(query)
+                .subscribe(groups -> mVideoRow.post(() -> showVideos(query, groups)), error -> {
+                    if (retry) { // one more try, otherwise the page works without the row
+                        mHandler.postDelayed(() -> {
+                            if (mDialog.isShowing()) {
+                                loadVideos(query, false);
+                            }
+                        }, 1_500);
+                    }
+                });
+    }
+
+    private void showVideos(String query, List<MediaGroup> groups) {
+        if (!mDialog.isShowing() || groups == null) {
+            return;
+        }
+
+        for (MediaGroup group : groups) {
+            if (group == null || group.getType() == MediaGroup.TYPE_SHORTS || group.getMediaItems() == null) {
+                continue;
+            }
+            List<Video> videos = new ArrayList<>();
+            for (Video video : VideoGroup.from(group).getVideos()) {
+                if (video.hasVideo() && !video.isShorts) {
+                    videos.add(video);
+                }
+            }
+            if (videos.size() >= 3) {
+                mVideoAdapter.clear();
+                mVideoAdapter.addAll(0, videos);
+                mVideoRowTitle.setText(mContext.getString(R.string.hometube_search_recent_videos, query));
+                mVideoRow.setVisibility(getQuery().trim().isEmpty() ? View.VISIBLE : View.GONE);
+                return;
+            }
+        }
+    }
+
+    private static boolean isDescendant(View view, View parent) {
+        android.view.ViewParent current = view.getParent();
+        while (current != null) {
+            if (current == parent) {
+                return true;
+            }
+            current = current.getParent();
+        }
+        return false;
     }
 
     private void loadSuggestions() {
         String query = getQuery().trim();
+
+        // Videos only while nothing is typed (like YouTube)
+        mVideoRow.setVisibility(query.isEmpty() && mVideoAdapter.size() > 0 ? View.VISIBLE : View.GONE);
 
         if (query.isEmpty()) {
             showItems(new ArrayList<>(mHistory.subList(0, Math.min(mHistory.size(), MAX_ITEMS))), mHistory, "");
