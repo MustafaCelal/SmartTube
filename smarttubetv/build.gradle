@@ -41,7 +41,7 @@ if (new File("${projectDir}/google-services.json").exists() && (getGradle().getS
 }
 
 // HomeTube: release number (see scripts/hometube-release.sh)
-def hometubeBuild = 1
+def hometubeBuild = 2
 
 android {
     // FIX: Default interface methods are only supported starting with Android N (--min-api 24)
