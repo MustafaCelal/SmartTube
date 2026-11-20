@@ -7,8 +7,9 @@ import androidx.multidex.MultiDexApplication;
 import androidx.work.Configuration;
 
 import com.liskovsoft.sharedutils.helpers.Helpers;
-import com.liskovsoft.sharedutils.helpers.MessageHelpers;
+import com.liskovsoft.smartyoutubetv2.common.misc.MessageHelpers;
 import com.liskovsoft.smartyoutubetv2.common.app.models.data.BrowseSection;
+import com.liskovsoft.smartyoutubetv2.common.misc.HomeTubeLog;
 import com.liskovsoft.smartyoutubetv2.common.app.presenters.BrowsePresenter;
 import com.liskovsoft.smartyoutubetv2.common.app.views.AddDeviceView;
 import com.liskovsoft.smartyoutubetv2.common.app.views.AppDialogView;
@@ -82,6 +83,8 @@ public class MainApplication extends MultiDexApplication implements Configuratio
                 // UnsatisfiedLinkError
             }
         }
+
+        HomeTubeLog.init(this); // HomeTube: app log in files, before the crash handler below
 
         setupGlobalExceptionHandler();
         setupViewManager();

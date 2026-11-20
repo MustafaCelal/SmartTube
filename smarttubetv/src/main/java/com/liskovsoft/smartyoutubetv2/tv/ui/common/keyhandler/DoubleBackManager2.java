@@ -2,7 +2,7 @@ package com.liskovsoft.smartyoutubetv2.tv.ui.common.keyhandler;
 
 import android.content.Context;
 
-import com.liskovsoft.sharedutils.helpers.MessageHelpers;
+import com.liskovsoft.smartyoutubetv2.common.misc.MessageHelpers;
 import com.liskovsoft.smartyoutubetv2.tv.R;
 
 public class DoubleBackManager2 {

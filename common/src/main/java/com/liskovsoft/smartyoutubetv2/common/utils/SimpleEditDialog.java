@@ -8,7 +8,7 @@ import android.view.inputmethod.EditorInfo;
 import android.widget.EditText;
 import androidx.appcompat.app.AlertDialog;
 import com.liskovsoft.sharedutils.helpers.KeyHelpers;
-import com.liskovsoft.sharedutils.helpers.MessageHelpers;
+import com.liskovsoft.smartyoutubetv2.common.misc.MessageHelpers;
 import com.liskovsoft.smartyoutubetv2.common.R;
 
 public class SimpleEditDialog {

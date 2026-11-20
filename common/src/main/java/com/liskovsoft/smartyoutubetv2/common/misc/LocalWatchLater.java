@@ -82,7 +82,7 @@ public final class LocalWatchLater {
      */
     public boolean toggleWithMessage(@NonNull Video video) {
         boolean added = toggle(video);
-        com.liskovsoft.sharedutils.helpers.MessageHelpers.showMessage(mContext,
+        com.liskovsoft.smartyoutubetv2.common.misc.MessageHelpers.showMessage(mContext,
                 added ? R.string.hometube_watch_later_added : R.string.hometube_watch_later_removed);
         return added;
     }

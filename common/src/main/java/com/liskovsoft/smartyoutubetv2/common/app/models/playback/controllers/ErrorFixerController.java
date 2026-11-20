@@ -6,7 +6,7 @@ import com.google.android.exoplayer2.source.sabr.parser.exceptions.SabrBackoffEr
 import com.google.android.exoplayer2.source.sabr.parser.exceptions.SabrPoTokenError;
 import com.google.android.exoplayer2.source.sabr.parser.exceptions.SabrReloadPlayerError;
 import com.liskovsoft.sharedutils.helpers.Helpers;
-import com.liskovsoft.sharedutils.helpers.MessageHelpers;
+import com.liskovsoft.smartyoutubetv2.common.misc.MessageHelpers;
 import com.liskovsoft.sharedutils.mylogger.Log;
 import com.liskovsoft.smartyoutubetv2.common.R;
 import com.liskovsoft.smartyoutubetv2.common.app.models.data.Video;
@@ -38,7 +38,7 @@ public class ErrorFixerController extends BasePlayerController implements OnLong
 
     @Override
     public void onEngineError(int type, int rendererIndex, Throwable error) {
-        Log.e(TAG, "Player error occurred: %s. Trying to fix…", type);
+        Log.e(TAG, "Player error occurred: %s (%s). Trying to fix…", type, error);
 
         mBufferingDetector.reset();
         runEngineErrorAction(type, rendererIndex, error);

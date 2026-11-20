@@ -271,7 +271,7 @@ public class VideoPlayerGlue extends MaxControlsVideoPlayerGlue<PlayerAdapter> i
     }
 
     private void showToggleMessage(int titleResId, boolean isOn) {
-        com.liskovsoft.sharedutils.helpers.MessageHelpers.showMessage(getContext(),
+        com.liskovsoft.smartyoutubetv2.common.misc.MessageHelpers.showMessage(getContext(),
                 getContext().getString(titleResId) + ": " + getContext().getString(isOn ? R.string.hometube_on : R.string.hometube_off));
     }
 

@@ -2,7 +2,7 @@ package com.liskovsoft.smartyoutubetv2.tv.ui.webbrowser;
 
 import android.os.Bundle;
 
-import com.liskovsoft.sharedutils.helpers.MessageHelpers;
+import com.liskovsoft.smartyoutubetv2.common.misc.MessageHelpers;
 import com.liskovsoft.smartyoutubetv2.tv.R;
 import com.liskovsoft.smartyoutubetv2.tv.ui.common.LeanbackActivity;
 
