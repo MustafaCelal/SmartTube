@@ -103,15 +103,61 @@ public final class InlineSearchDialog {
     private Disposable mVideosAction;
     private Disposable mResultsAction;
     private String mSubmittedQuery;     // results on the page are for this query
+    private long mSubmitTimeMs;
+    private java.lang.ref.WeakReference<View> mLastFocus;
+    private View mLastFocusBeforeLeave;
+    private boolean mIsRestoringFocus;
     private int mSearchOptions;
     private String mRecentTitle;        // videos for the last search, shown while the field is empty
     private List<Video> mRecentVideos;
     private final Runnable mLoadSuggestions = this::loadSuggestions;
 
-    private InlineSearchDialog(Context context) {
+    private final boolean mIsPage;      // embedded as the Search page of the sidebar (no dialog)
+    private boolean mIsActive;
+    private View mRoot;
+    private View mMic;
+
+    private InlineSearchDialog(Context context, boolean isPage) {
         mContext = context;
         mDensity = context.getResources().getDisplayMetrics().density;
-        mDialog = new Dialog(context, android.R.style.Theme_Black_NoTitleBar_Fullscreen);
+        mIsPage = isPage;
+        mDialog = isPage ? null : new Dialog(context, android.R.style.Theme_Black_NoTitleBar_Fullscreen);
+    }
+
+    /**
+     * HomeTube: the search as a page of the sidebar (YouTube TV-like). Focus enters on the mic,
+     * right from it is the field. Call {@link #release()} when the page goes away.
+     */
+    public static InlineSearchDialog createPage(Context context) {
+        InlineSearchDialog page = new InlineSearchDialog(context, true);
+        page.mRoot = page.buildView();
+        page.mIsActive = true;
+        page.loadHistory();
+        return page;
+    }
+
+    public View getView() {
+        return mRoot;
+    }
+
+    public void release() {
+        mIsActive = false;
+        if (mVideosAction != null) {
+            mVideosAction.dispose();
+        }
+        if (mResultsAction != null) {
+            mResultsAction.dispose();
+        }
+        mHandler.removeCallbacks(mLoadSuggestions);
+        mHandler.removeCallbacks(mRetryHistory);
+    }
+
+    private boolean isActive() {
+        return mIsPage ? mIsActive : mDialog.isShowing();
+    }
+
+    private View currentFocus() {
+        return mRoot != null ? mRoot.findFocus() : null;
     }
 
     public static void show(Context context) {
@@ -133,7 +179,7 @@ public final class InlineSearchDialog {
             return;
         }
 
-        InlineSearchDialog dialog = new InlineSearchDialog(context);
+        InlineSearchDialog dialog = new InlineSearchDialog(context, false);
         dialog.showInt(onClosed);
         if (!TextUtils.isEmpty(initialQuery)) {
             dialog.setQuery(initialQuery);
@@ -144,16 +190,26 @@ public final class InlineSearchDialog {
         return (int) (value * mDensity);
     }
 
-    private void showInt(Runnable onClosed) {
-        FrameLayout root = new FrameLayout(mContext);
-        root.setBackgroundColor(0xFF0F0F0F);
+    private View buildView() {
+        FrameLayout root = new FrameLayout(mContext) {
+            @Override
+            protected boolean onRequestFocusInDescendants(int direction, android.graphics.Rect previouslyFocusedRect) {
+                // Coming from the sidebar: start on the mic (like YouTube), right from it is the field
+                if (mIsPage && mMic != null && findFocus() == null && mMic.requestFocus()) {
+                    return true;
+                }
+                return super.onRequestFocusInDescendants(direction, previouslyFocusedRect);
+            }
+        };
+        root.setBackgroundColor(mIsPage ? Color.TRANSPARENT : 0xFF0F0F0F);
+        root.setDescendantFocusability(ViewGroup.FOCUS_AFTER_DESCENDANTS);
 
         LinearLayout page = new LinearLayout(mContext);
         mPage = page;
         page.setOrientation(LinearLayout.VERTICAL);
         page.setClipToPadding(false); // the focused (zoomed) card may go a bit beyond the left edge
         page.setClipChildren(false);
-        page.setPadding(dp(80), dp(32), dp(48), dp(24));
+        page.setPadding(mIsPage ? dp(28) : dp(80), dp(32), dp(48), dp(24));
         // The page is taller than the screen (videos at the bottom): scrollable, moved by the code below
         android.widget.ScrollView scroll = new android.widget.ScrollView(mContext);
         scroll.setVerticalScrollBarEnabled(false);
@@ -170,6 +226,18 @@ public final class InlineSearchDialog {
         barParams.setMarginStart(dp(12));
         top.addView(createSearchBar(), barParams);
         page.addView(top);
+        // Mic <-> field with left/right (the field sits inside the bar, default focus search misses it)
+        mMic.setId(View.generateViewId());
+        mInput.setId(View.generateViewId());
+        mMic.setNextFocusRightId(mInput.getId());
+        mInput.setNextFocusLeftId(mMic.getId());
+        if (mFirstKey != null) {
+            if (mFirstKey.getId() == View.NO_ID) {
+                mFirstKey.setId(View.generateViewId());
+            }
+            mInput.setNextFocusDownId(mFirstKey.getId());
+            mMic.setNextFocusDownId(mFirstKey.getId());
+        }
 
         LinearLayout body = new LinearLayout(mContext);
         body.setOrientation(LinearLayout.HORIZONTAL);
@@ -190,9 +258,40 @@ public final class InlineSearchDialog {
         mScroll = scroll;
 
         // Going down to the results scrolls the page (the focused row near the top), back up shows the keyboard again
-        root.getViewTreeObserver().addOnGlobalFocusChangeListener((oldFocus, newFocus) -> scrollToFocus(newFocus));
+        root.getViewTreeObserver().addOnGlobalFocusChangeListener((oldFocus, newFocus) -> {
+            if (newFocus != null && isDescendant(newFocus, root)) {
+                if (mIsRestoringFocus) {
+                    return;
+                }
+                mLastFocus = new java.lang.ref.WeakReference<>(newFocus);
+                scrollToFocus(newFocus);
+            }
+        });
+        // Back from a video: focus the card that was opened (like YouTube), not the first item
+        root.getViewTreeObserver().addOnWindowFocusChangeListener(hasFocus -> {
+            if (!hasFocus) {
+                mLastFocusBeforeLeave = mLastFocus != null ? mLastFocus.get() : null;
+                return;
+            }
+            View last = mLastFocusBeforeLeave;
+            mLastFocusBeforeLeave = null;
+            if (last != null && last.isAttachedToWindow() && isDescendant(last, mResults)) {
+                mIsRestoringFocus = true;
+                root.post(() -> {
+                    last.requestFocus();
+                    mIsRestoringFocus = false;
+                    mLastFocus = new java.lang.ref.WeakReference<>(last);
+                    scrollToFocus(last);
+                });
+            }
+        });
 
-        mDialog.setContentView(root);
+        return root;
+    }
+
+    private void showInt(Runnable onClosed) {
+        mRoot = buildView();
+        mDialog.setContentView(mRoot);
 
         Window window = mDialog.getWindow();
         if (window != null) {
@@ -235,8 +334,8 @@ public final class InlineSearchDialog {
         bar.setGravity(Gravity.CENTER_VERTICAL);
         bar.setPadding(dp(18), 0, dp(18), 0);
         bar.setBackground(rounded(FIELD_COLOR, dp(22)));
-        bar.setClickable(true);
         bar.setOnClickListener(v -> openSystemKeyboard()); // touch / mouse on the bar
+        bar.setFocusable(false); // the field inside takes the focus, not the bar
 
         ImageView icon = new ImageView(mContext);
         icon.setImageResource(R.drawable.icon_hometube_search);
@@ -272,6 +371,10 @@ public final class InlineSearchDialog {
         });
         mInput.setOnClickListener(v -> openSystemKeyboard());
         mInput.setOnKeyListener((v, keyCode, event) -> {
+            boolean isOk = keyCode == KeyEvent.KEYCODE_DPAD_CENTER || keyCode == KeyEvent.KEYCODE_ENTER || keyCode == KeyEvent.KEYCODE_NUMPAD_ENTER;
+            if (isOk && System.currentTimeMillis() - mSubmitTimeMs < 1_000) {
+                return true; // the rest of the key press that submitted the search
+            }
             if (event.getAction() == KeyEvent.ACTION_UP &&
                     (keyCode == KeyEvent.KEYCODE_DPAD_CENTER || keyCode == KeyEvent.KEYCODE_ENTER || keyCode == KeyEvent.KEYCODE_NUMPAD_ENTER)) {
                 openSystemKeyboard();
@@ -332,6 +435,12 @@ public final class InlineSearchDialog {
         mHistory.remove(trimmed);
         mHistory.add(0, trimmed);
         mSearchOptions = 0;
+        mSubmitTimeMs = System.currentTimeMillis();
+        // Close the TV keyboard, the results come under our keyboard
+        InputMethodManager imm = (InputMethodManager) mContext.getSystemService(Context.INPUT_METHOD_SERVICE);
+        if (imm != null) {
+            imm.hideSoftInputFromWindow(mInput.getWindowToken(), 0);
+        }
         runSearch(trimmed, true);
     }
 
@@ -353,9 +462,12 @@ public final class InlineSearchDialog {
             mic.setColorFilter(hasFocus ? Color.BLACK : TEXT_COLOR, PorterDuff.Mode.SRC_IN);
             mInput.setHint(hasFocus ? R.string.hometube_voice_search : R.string.action_search);
         });
+        mMic = mic;
         mic.setOnClickListener(v -> {
             // The TV's voice search; its results open in the search results page
-            mDialog.dismiss();
+            if (!mIsPage) {
+                mDialog.dismiss();
+            }
             SearchPresenter.instance(mContext).startVoice();
         });
         return mic;
@@ -408,7 +520,7 @@ public final class InlineSearchDialog {
     }
 
     private void fillKeys() {
-        View focused = mDialog.getCurrentFocus();
+        View focused = currentFocus();
         int focusedIndex = focused != null ? indexInKeys(focused) : -1;
 
         mKeyRows.removeAllViews();
@@ -444,6 +556,17 @@ public final class InlineSearchDialog {
         search.setTypeface(Typeface.create("sans-serif-medium", Typeface.BOLD));
         actions.addView(search);
         mKeyRows.addView(actions, actionsParams);
+
+        // Down from the field goes to the keyboard
+        if (mInput != null && mFirstKey != null) {
+            if (mFirstKey.getId() == View.NO_ID) {
+                mFirstKey.setId(View.generateViewId());
+            }
+            mInput.setNextFocusDownId(mFirstKey.getId());
+            if (mMic != null) {
+                mMic.setNextFocusDownId(mFirstKey.getId());
+            }
+        }
 
         if (focusedIndex >= 0) {
             View same = keyAt(focusedIndex);
@@ -693,7 +816,7 @@ public final class InlineSearchDialog {
     }
 
     private void showResults(String query, List<MediaGroup> groups, boolean focusResults) {
-        if (!mDialog.isShowing() || !TextUtils.equals(query, mSubmittedQuery)) {
+        if (!isActive() || !TextUtils.equals(query, mSubmittedQuery)) {
             return;
         }
 
@@ -719,12 +842,16 @@ public final class InlineSearchDialog {
         }
 
         if (focusResults) {
-            View first = findFirstCard();
-            if (first != null) {
-                first.requestFocus();
-            }
+            // After the key that submitted is fully released, so it doesn't open the first result
+            long delay = Math.max(0, 600 - (System.currentTimeMillis() - mSubmitTimeMs));
+            mRows.postDelayed(() -> {
+                View first = findFirstCard();
+                if (first != null && isActive() && TextUtils.equals(query, mSubmittedQuery)) {
+                    first.requestFocus();
+                }
+            }, delay);
         } else {
-            mRows.post(() -> scrollToFocus(mDialog.getCurrentFocus())); // stay at the filters
+            mRows.post(() -> scrollToFocus(currentFocus())); // stay at the filters
         }
     }
 
@@ -756,8 +883,9 @@ public final class InlineSearchDialog {
 
     private static List<Video> toVideos(MediaGroup group) {
         List<Video> videos = new ArrayList<>();
-        if (group == null || group.getType() == MediaGroup.TYPE_SHORTS || group.getMediaItems() == null) {
-            return videos;
+        if (group == null || group.getType() == MediaGroup.TYPE_SHORTS || group.getMediaItems() == null ||
+                "shorts".equalsIgnoreCase(group.getTitle() != null ? group.getTitle().trim() : null)) {
+            return videos; // HomeTube hides Shorts
         }
         for (Video video : VideoGroup.from(group).getVideos()) {
             if (!video.isShorts) {
@@ -788,7 +916,7 @@ public final class InlineSearchDialog {
                 }), error -> {
                     if (retry) { // one more try, otherwise the page works without the row
                         mHandler.postDelayed(() -> {
-                            if (mDialog.isShowing()) {
+                            if (isActive()) {
                                 loadVideos(query, false);
                             }
                         }, 1_500);
@@ -908,7 +1036,7 @@ public final class InlineSearchDialog {
         showItems(historyMatches, historyMatches, query); // right away, suggestions follow
 
         mProvider.search(query, results -> mList.post(() -> {
-            if (!mDialog.isShowing() || !TextUtils.equals(query, getQuery().trim())) {
+            if (!isActive() || !TextUtils.equals(query, getQuery().trim())) {
                 return;
             }
             List<String> items = new ArrayList<>(historyMatches);

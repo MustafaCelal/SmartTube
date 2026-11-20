@@ -63,7 +63,7 @@ import io.reactivex.disposables.Disposable;
 public class BrowsePresenter extends BasePresenter<BrowseView> implements SectionPresenter, VideoGroupPresenter, AccountChangeListener {
     // HomeTube: sidebar rail items
     private static final int RAIL_ACCOUNT_ID = -2002;
-    private static final int RAIL_SEARCH_ID = -2001;
+    public static final int RAIL_SEARCH_ID = -2001; // HomeTube: shown as the search page
     private List<BrowseSection> mRailSections;
     private int mLastContentSectionId = MediaGroup.TYPE_HOME;
     private BrowseSection mLocalWatchLaterSection; // HomeTube
@@ -1142,17 +1142,12 @@ public class BrowsePresenter extends BasePresenter<BrowseView> implements Sectio
      * HomeTube: Search opens as soon as it gets focus in the rail (no extra OK press), like YouTube
      */
     public boolean onRailSectionFocused(int sectionId) {
-        if (sectionId == RAIL_SEARCH_ID && getView() != null) {
-            getView().showInlineSearch(); // the current page stays as is
-            return true;
-        }
-
-        return false;
+        return false; // Search is a page now (SearchPageFragment)
     }
 
     public boolean onRailSectionClicked(int sectionId) {
-        if (onRailSectionFocused(sectionId)) {
-            return true;
+        if (sectionId == RAIL_SEARCH_ID) {
+            return false; // a normal page: OK moves into it
         }
 
         for (BrowseSection section : getRailSections()) {

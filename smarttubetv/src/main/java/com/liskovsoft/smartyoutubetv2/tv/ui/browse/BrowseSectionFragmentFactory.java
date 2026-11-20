@@ -77,6 +77,11 @@ public class BrowseSectionFragmentFactory extends BrowseSupportFragment.Fragment
                 fragment = new MultiVideoGridFragment();
                 break;
             case BrowseSection.TYPE_ERROR:
+                if (header instanceof SectionHeaderItem && ((SectionHeaderItem) header).getSection() != null &&
+                        ((SectionHeaderItem) header).getSection().getId() == com.liskovsoft.smartyoutubetv2.common.app.presenters.BrowsePresenter.RAIL_SEARCH_ID) {
+                    fragment = new SearchPageFragment(); // HomeTube
+                    break;
+                }
                 fragment = new ErrorDialogFragment((ErrorFragmentData) ((SectionHeaderItem) header).getSection().getData());
                 break;
         }
