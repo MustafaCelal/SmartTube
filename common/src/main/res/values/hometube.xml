@@ -38,4 +38,8 @@
     <string name="hometube_more">More</string>
     <string name="hometube_speed">Speed</string>
     <string name="hometube_subtitles">Subtitles</string>
+    <string name="hometube_loop">Loop</string>
+    <string name="hometube_autoplay">Autoplay next video</string>
+    <string name="hometube_on">On</string>
+    <string name="hometube_off">Off</string>
 </resources>

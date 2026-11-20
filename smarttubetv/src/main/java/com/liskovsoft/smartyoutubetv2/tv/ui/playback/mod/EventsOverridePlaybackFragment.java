@@ -166,8 +166,16 @@ public class EventsOverridePlaybackFragment extends SurfacePlaybackFragment {
     private void focusPlayButton() {
         View root = getView();
         View dock = root != null ? root.findViewById(androidx.leanback.R.id.controls_dock) : null;
-        if (dock instanceof ViewGroup && ((ViewGroup) dock).getChildCount() > 0) {
-            ((ViewGroup) dock).getChildAt(0).requestFocus();
+        if (dock == null) {
+            return;
+        }
+
+        // The button bar remembers (and reports) only the last focused button, so take its first child directly
+        View bar = dock.findViewById(androidx.leanback.R.id.control_bar);
+        if (bar instanceof ViewGroup && ((ViewGroup) bar).getChildCount() > 0) {
+            ((ViewGroup) bar).getChildAt(0).requestFocus();
+        } else {
+            dock.requestFocus();
         }
     }
 

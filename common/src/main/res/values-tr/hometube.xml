@@ -36,4 +36,8 @@
     <string name="hometube_more">Diğer</string>
     <string name="hometube_speed">Hız</string>
     <string name="hometube_subtitles">Altyazı</string>
+    <string name="hometube_loop">Döngü</string>
+    <string name="hometube_autoplay">Sonraki videoyu otomatik oynat</string>
+    <string name="hometube_on">Açık</string>
+    <string name="hometube_off">Kapalı</string>
 </resources>

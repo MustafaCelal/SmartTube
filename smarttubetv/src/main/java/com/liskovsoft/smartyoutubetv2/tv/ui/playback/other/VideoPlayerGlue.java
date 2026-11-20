@@ -21,7 +21,9 @@ import com.bumptech.glide.Glide;
 import com.bumptech.glide.request.target.SimpleTarget;
 import com.bumptech.glide.request.transition.Transition;
 import com.liskovsoft.sharedutils.mylogger.Log;
+import com.liskovsoft.smartyoutubetv2.common.app.models.playback.manager.PlayerConstants;
 import com.liskovsoft.smartyoutubetv2.common.prefs.GeneralData;
+import com.liskovsoft.smartyoutubetv2.common.prefs.PlayerData;
 import com.liskovsoft.smartyoutubetv2.common.prefs.PlayerTweaksData;
 import com.liskovsoft.smartyoutubetv2.tv.R;
 import com.liskovsoft.smartyoutubetv2.tv.ui.mod.leanback.playerglue.tweaks.MaxControlsVideoPlayerGlue;
@@ -201,7 +203,7 @@ public class VideoPlayerGlue extends MaxControlsVideoPlayerGlue<PlayerAdapter> i
         AppDialogPresenter dialog = AppDialogPresenter.instance(getContext());
         List<OptionItem> items = new ArrayList<>();
         int[] ids = {R.id.action_thumbs_up, R.id.action_thumbs_down, R.id.action_subscribe, R.id.action_channel,
-                R.id.action_playlist_add, R.id.action_playback_queue, R.id.action_repeat, R.id.action_info};
+                R.id.action_playlist_add, R.id.action_playback_queue, R.id.action_info};
 
         for (int id : ids) {
             Action action = mActions.get(id);
@@ -222,8 +224,55 @@ public class VideoPlayerGlue extends MaxControlsVideoPlayerGlue<PlayerAdapter> i
             }));
         }
 
+        // Loop and autoplay as simple on/off switches instead of the cycling repeat button
+        boolean loop = isLoopEnabled();
+        boolean autoplay = isAutoplayEnabled();
+        items.add(UiOptionItem.from(withCheck(getContext().getString(R.string.hometube_loop), loop), option -> {
+            dialog.closeDialog();
+            setPlaybackMode(!loop, autoplay);
+            showToggleMessage(R.string.hometube_loop, !loop);
+        }));
+        items.add(UiOptionItem.from(withCheck(getContext().getString(R.string.hometube_autoplay), autoplay), option -> {
+            dialog.closeDialog();
+            setPlaybackMode(loop, !autoplay);
+            showToggleMessage(R.string.hometube_autoplay, !autoplay);
+        }));
+
         dialog.appendStringsCategory(getContext().getString(R.string.hometube_more), items);
         dialog.showDialog(getContext().getString(R.string.hometube_more));
+    }
+
+    private static final String PREFS_PLAYER = "hometube_player";
+    private static final String KEY_AUTOPLAY = "autoplay";
+
+    private static CharSequence withCheck(CharSequence title, boolean isOn) {
+        return isOn ? title + "  \u2713" : title;
+    }
+
+    private boolean isLoopEnabled() {
+        return PlayerData.instance(getContext()).getPlaybackMode() == PlayerConstants.PLAYBACK_MODE_ONE;
+    }
+
+    /**
+     * HomeTube: autoplay is kept apart, so turning the loop off brings back the previous autoplay choice.
+     */
+    private boolean isAutoplayEnabled() {
+        int mode = PlayerData.instance(getContext()).getPlaybackMode();
+        boolean defaultValue = mode != PlayerConstants.PLAYBACK_MODE_PAUSE && mode != PlayerConstants.PLAYBACK_MODE_CLOSE;
+        return getContext().getSharedPreferences(PREFS_PLAYER, Context.MODE_PRIVATE).getBoolean(KEY_AUTOPLAY, defaultValue);
+    }
+
+    private void setPlaybackMode(boolean loop, boolean autoplay) {
+        getContext().getSharedPreferences(PREFS_PLAYER, Context.MODE_PRIVATE).edit().putBoolean(KEY_AUTOPLAY, autoplay).apply();
+        int mode = loop ? PlayerConstants.PLAYBACK_MODE_ONE :
+                autoplay ? PlayerConstants.PLAYBACK_MODE_ALL : PlayerConstants.PLAYBACK_MODE_PAUSE;
+        PlayerData.instance(getContext()).setPlaybackMode(mode);
+        setButtonState(R.id.action_repeat, mode);
+    }
+
+    private void showToggleMessage(int titleResId, boolean isOn) {
+        com.liskovsoft.sharedutils.helpers.MessageHelpers.showMessage(getContext(),
+                getContext().getString(titleResId) + ": " + getContext().getString(isOn ? R.string.hometube_on : R.string.hometube_off));
     }
 
     @Override
