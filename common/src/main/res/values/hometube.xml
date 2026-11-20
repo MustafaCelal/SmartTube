@@ -42,4 +42,5 @@
     <string name="hometube_autoplay">Autoplay next video</string>
     <string name="hometube_on">On</string>
     <string name="hometube_off">Off</string>
+    <string name="hometube_speed_hint">◀ ▶ change by 0.05 · ▼ quick values · OK to close</string>
 </resources>

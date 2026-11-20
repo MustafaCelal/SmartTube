@@ -344,6 +344,17 @@ public class VideoStateController extends BasePlayerController {
     }
 
     private void onSpeedLongClicked(boolean enabled) {
+        // HomeTube: own panel with a fine (0.05) bar and quick buttons
+        if (getContext().getResources().getBoolean(R.bool.hometube_rail_actions)) {
+            com.liskovsoft.smartyoutubetv2.common.misc.HomeTubeSpeedPanel.show(getActivity(), getPlayer(), () -> {
+                State state = getStateService().getByVideoId(getVideo() != null ? getVideo().videoId : null);
+                if (state != null && getPlayerData().isSpeedPerVideoEnabled()) {
+                    getStateService().save(new State(state.video, state.positionMs, state.durationMs, getPlayerData().getSpeed(getVideo().channelId)));
+                }
+            });
+            return;
+        }
+
         fitVideoIntoDialog();
 
         AppDialogPresenter settingsPresenter = AppDialogPresenter.instance(getContext());

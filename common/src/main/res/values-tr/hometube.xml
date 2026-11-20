@@ -40,4 +40,5 @@
     <string name="hometube_autoplay">Sonraki videoyu otomatik oynat</string>
     <string name="hometube_on">Açık</string>
     <string name="hometube_off">Kapalı</string>
+    <string name="hometube_speed_hint">◀ ▶ ile 0.05 değiştir · ▼ hazır değerler · OK ile kapat</string>
 </resources>
