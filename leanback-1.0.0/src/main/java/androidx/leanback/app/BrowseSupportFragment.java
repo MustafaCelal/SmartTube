@@ -1516,6 +1516,9 @@ public class BrowseSupportFragment extends BaseSupportFragment {
             params.setMarginStart(mCollapsedHeadersWidth);
             mScaleFrameLayout.setLayoutParams(params);
             View rowsDock = getView() != null ? getView().findViewById(R.id.browse_container_dock) : null;
+            if (rowsDock instanceof androidx.leanback.widget.BrowseRowsFrameLayout) {
+                ((androidx.leanback.widget.BrowseRowsFrameLayout) rowsDock).setRespectMargins(true); // last card in a row not off-screen
+            }
             if (rowsDock instanceof android.widget.FrameLayout) {
                 ((android.widget.FrameLayout) rowsDock).setForeground(
                         expand ? null : new android.graphics.drawable.ColorDrawable(0xB30F0F0F));

@@ -44,13 +44,27 @@ public class BrowseRowsFrameLayout extends FrameLayout {
         super(context, attrs, defStyle);
     }
 
+    private boolean mRespectMargins;
+
+    /**
+     * MOD (HomeTube): by default the child keeps the full width (it slides when the headers show).
+     */
+    public void setRespectMargins(boolean respectMargins) {
+        if (mRespectMargins != respectMargins) {
+            mRespectMargins = respectMargins;
+            requestLayout();
+        }
+    }
+
     @Override
     protected void measureChildWithMargins(View child,
             int parentWidthMeasureSpec, int widthUsed,
             int parentHeightMeasureSpec, int heightUsed) {
         final MarginLayoutParams lp = (MarginLayoutParams) child.getLayoutParams();
+        // MOD (HomeTube): the rows sit next to the sidebar rail, so they must not be wider than the rest of the screen
+        int marginsUsed = mRespectMargins ? lp.leftMargin + lp.rightMargin : 0;
         final int childWidthMeasureSpec = getChildMeasureSpec(parentWidthMeasureSpec,
-                getPaddingLeft() + getPaddingRight() + widthUsed, lp.width);
+                getPaddingLeft() + getPaddingRight() + widthUsed + marginsUsed, lp.width);
         final int childHeightMeasureSpec = getChildMeasureSpec(parentHeightMeasureSpec,
                 getPaddingTop() + getPaddingBottom() + heightUsed, lp.height);
         child.measure(childWidthMeasureSpec, childHeightMeasureSpec);
