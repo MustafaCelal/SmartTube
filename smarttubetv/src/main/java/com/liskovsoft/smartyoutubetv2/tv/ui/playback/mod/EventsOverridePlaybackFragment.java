@@ -4,9 +4,12 @@ import android.os.Bundle;
 import android.view.InputEvent;
 import android.view.KeyEvent;
 import android.view.View;
+import android.view.ViewGroup;
 import androidx.leanback.app.PlaybackSupportFragment;
 import androidx.leanback.widget.VerticalGridView;
 import com.liskovsoft.sharedutils.helpers.Helpers;
+import com.liskovsoft.smartyoutubetv2.common.app.models.playback.manager.PlayerUI;
+import com.liskovsoft.smartyoutubetv2.tv.R;
 import com.liskovsoft.smartyoutubetv2.tv.ui.playback.mod.surface.SurfacePlaybackFragment;
 
 /**
@@ -14,6 +17,8 @@ import com.liskovsoft.smartyoutubetv2.tv.ui.playback.mod.surface.SurfacePlayback
  *  Fixing that for keys.
  */
 public class EventsOverridePlaybackFragment extends SurfacePlaybackFragment {
+    private int mShowControlsKeyCode = KeyEvent.KEYCODE_UNKNOWN; // HomeTube
+
     @Override
     public void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
@@ -99,6 +104,71 @@ public class EventsOverridePlaybackFragment extends SurfacePlaybackFragment {
                 }
         }
         return consumeEvent;
+    }
+
+    /**
+     * HomeTube: while the controls are hidden, the first arrow or OK press only shows the controls
+     * with the focus on play/pause (YouTube-like). Without this the key reaches the hidden progress bar and seeks.
+     * Called by the activity before any other key handling.
+     */
+    public boolean dispatchShowControlsKey(KeyEvent event) {
+        if (getContext() == null || getView() == null || !getResources().getBoolean(R.bool.hometube_rail_actions)) {
+            return false;
+        }
+
+        int keyCode = event.getKeyCode();
+
+        switch (keyCode) {
+            case KeyEvent.KEYCODE_DPAD_CENTER:
+            case KeyEvent.KEYCODE_ENTER:
+            case KeyEvent.KEYCODE_NUMPAD_ENTER:
+            case KeyEvent.KEYCODE_BUTTON_A:
+            case KeyEvent.KEYCODE_DPAD_DOWN:
+            case KeyEvent.KEYCODE_DPAD_UP:
+            case KeyEvent.KEYCODE_DPAD_LEFT:
+            case KeyEvent.KEYCODE_DPAD_RIGHT:
+                break;
+            default:
+                return false;
+        }
+
+        if (event.getAction() == KeyEvent.ACTION_DOWN) {
+            if (!isControlsOverlayVisible() && event.getRepeatCount() == 0 && !isInSeek()) {
+                mShowControlsKeyCode = keyCode;
+                showControlsOnPlayButton();
+                return true;
+            }
+            // swallow the auto repeat of the same press
+            return mShowControlsKeyCode == keyCode;
+        }
+
+        if (event.getAction() == KeyEvent.ACTION_UP && mShowControlsKeyCode == keyCode) {
+            mShowControlsKeyCode = KeyEvent.KEYCODE_UNKNOWN;
+            return true;
+        }
+
+        return false;
+    }
+
+    private void showControlsOnPlayButton() {
+        if (this instanceof PlayerUI) {
+            ((PlayerUI) this).showControls(true); // also scrolls back from the suggestions
+        } else {
+            showControlsOverlay(true);
+        }
+
+        focusPlayButton();
+        if (getView() != null) {
+            getView().post(this::focusPlayButton); // after the rows are scrolled back
+        }
+    }
+
+    private void focusPlayButton() {
+        View root = getView();
+        View dock = root != null ? root.findViewById(androidx.leanback.R.id.controls_dock) : null;
+        if (dock instanceof ViewGroup && ((ViewGroup) dock).getChildCount() > 0) {
+            ((ViewGroup) dock).getChildAt(0).requestFocus();
+        }
     }
 
     private View.OnKeyListener getInputEventHandler() {

@@ -58,6 +58,9 @@ public class PlaybackActivity extends LeanbackActivity {
     @Override
     public boolean dispatchKeyEvent(KeyEvent event) {
         if (mPlaybackFragment != null) {
+            if (mPlaybackFragment.dispatchShowControlsKey(event)) {
+                return true; // HomeTube: the first press only shows the controls
+            }
             mPlaybackFragment.onDispatchKeyEvent(event);
         }
 
