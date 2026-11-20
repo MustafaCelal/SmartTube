@@ -92,6 +92,7 @@ public final class InlineSearchDialog {
     private EditText mInput;
     private LinearLayout mList;
     private LinearLayout mKeyRows;
+    private LinearLayout mKeyboard;
     private TextView mModeKey;
     private boolean mIsSymbols;
     private View mFirstKey;
@@ -199,6 +200,14 @@ public final class InlineSearchDialog {
                     return true;
                 }
                 return super.onRequestFocusInDescendants(direction, previouslyFocusedRect);
+            }
+
+            @Override
+            public boolean dispatchKeyEvent(KeyEvent event) {
+                if (event.getAction() == KeyEvent.ACTION_DOWN && handleNavigation(event.getKeyCode(), findFocus())) {
+                    return true;
+                }
+                return super.dispatchKeyEvent(event);
             }
         };
         root.setBackgroundColor(mIsPage ? Color.TRANSPARENT : 0xFF0F0F0F);
@@ -488,6 +497,7 @@ public final class InlineSearchDialog {
 
     private LinearLayout createKeyboard() {
         LinearLayout keyboard = new LinearLayout(mContext);
+        mKeyboard = keyboard;
         keyboard.setOrientation(LinearLayout.HORIZONTAL);
 
         mKeyRows = new LinearLayout(mContext);
@@ -993,6 +1003,174 @@ public final class InlineSearchDialog {
         int cardWidth = (int) (mContext.getResources().getDimensionPixelSize(R.dimen.hometube_row_card_width) * scale);
         row.addView(grid, new LinearLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, cardWidth * 9 / 16 + dp(120)));
         return row;
+    }
+
+    // ---------- Remote navigation ----------
+    // Android's own focus search guesses badly between the field, the list and the keyboard
+    // (left from the keyboard jumped to the sidebar, up from the keys did nothing).
+    // Every direction is decided here instead.
+
+    private boolean handleNavigation(int keyCode, View focused) {
+        if (focused == null || mKeyboard == null) {
+            return false;
+        }
+        boolean up = keyCode == KeyEvent.KEYCODE_DPAD_UP;
+        boolean down = keyCode == KeyEvent.KEYCODE_DPAD_DOWN;
+        boolean left = keyCode == KeyEvent.KEYCODE_DPAD_LEFT;
+        boolean right = keyCode == KeyEvent.KEYCODE_DPAD_RIGHT;
+        if (!up && !down && !left && !right) {
+            return false;
+        }
+
+        // Top: mic <-> field, down to the keyboard
+        if (focused == mMic || focused == mInput) {
+            if (down) {
+                return focusOrConsume(mFirstKey);
+            }
+            if (up) {
+                return true;
+            }
+            if (right) {
+                return focused == mInput || focusOrConsume(mInput);
+            }
+            // left: field -> mic, mic -> sidebar
+            return focused == mInput && focusOrConsume(mMic);
+        }
+
+        boolean inKeyboard = isDescendant(focused, mKeyboard);
+        boolean inList = isDescendant(focused, mList);
+
+        if (inKeyboard || inList) {
+            List<View> keys = new ArrayList<>();
+            collectFocusables(mKeyboard, keys);
+            List<View> items = new ArrayList<>();
+            collectFocusables(mList, items);
+
+            List<View> candidates = new ArrayList<>();
+            if (up || down) {
+                candidates.addAll(inKeyboard ? keys : items); // stay in the same block
+            } else {
+                candidates.addAll(keys);
+                candidates.addAll(items);
+            }
+            View next = findInDirection(focused, candidates, keyCode);
+            if (next != null) {
+                next.requestFocus();
+                return true;
+            }
+            if (up) {
+                return focusOrConsume(mInput);
+            }
+            if (down) {
+                focusResults();
+                return true;
+            }
+            if (right) {
+                return true;
+            }
+            return false; // left with nothing there: the sidebar
+        }
+
+        if (mResults != null && isDescendant(focused, mResults) && up) {
+            View next = android.view.FocusFinder.getInstance().findNextFocus(mPage, focused, View.FOCUS_UP);
+            if (next != null && isDescendant(next, mResults)) {
+                return false; // between result rows and filters: as usual
+            }
+            List<View> keys = new ArrayList<>();
+            collectFocusables(mKeyboard, keys);
+            View key = findInDirection(focused, keys, keyCode);
+            return focusOrConsume(key != null ? key : mFirstKey);
+        }
+
+        return false;
+    }
+
+    private boolean focusOrConsume(View view) {
+        if (view != null) {
+            view.requestFocus();
+        }
+        return true;
+    }
+
+    private void focusResults() {
+        if (mResults == null || mResults.getVisibility() != View.VISIBLE) {
+            return;
+        }
+        View chipsScroll = (View) mChips.getParent();
+        if (chipsScroll.getVisibility() == View.VISIBLE && mChips.requestFocus()) {
+            return;
+        }
+        mRows.requestFocus();
+    }
+
+    private static void collectFocusables(View view, List<View> out) {
+        if (view.getVisibility() != View.VISIBLE) {
+            return;
+        }
+        if (view.isFocusable()) {
+            out.add(view);
+            return;
+        }
+        if (view instanceof ViewGroup) {
+            ViewGroup group = (ViewGroup) view;
+            for (int i = 0; i < group.getChildCount(); i++) {
+                collectFocusables(group.getChildAt(i), out);
+            }
+        }
+    }
+
+    /**
+     * Nearest view in the direction: distance along the direction plus (weighted) how far off the
+     * line it is. A view that overlaps the line counts as on it (wide keys like Space).
+     */
+    private View findInDirection(View from, List<View> candidates, int keyCode) {
+        android.graphics.Rect f = screenRect(from);
+        boolean vertical = keyCode == KeyEvent.KEYCODE_DPAD_UP || keyCode == KeyEvent.KEYCODE_DPAD_DOWN;
+        int tolerance = dp(4);
+        View best = null;
+        long bestScore = Long.MAX_VALUE;
+
+        for (View view : candidates) {
+            if (view == from) {
+                continue;
+            }
+            android.graphics.Rect r = screenRect(view);
+            int gap;
+            switch (keyCode) {
+                case KeyEvent.KEYCODE_DPAD_UP:
+                    gap = f.top - r.bottom;
+                    break;
+                case KeyEvent.KEYCODE_DPAD_DOWN:
+                    gap = r.top - f.bottom;
+                    break;
+                case KeyEvent.KEYCODE_DPAD_LEFT:
+                    gap = f.left - r.right;
+                    break;
+                default:
+                    gap = r.left - f.right;
+                    break;
+            }
+            if (gap < -tolerance) {
+                continue; // not in that direction
+            }
+            int center = vertical ? f.centerX() : f.centerY();
+            int start = vertical ? r.left : r.top;
+            int end = vertical ? r.right : r.bottom;
+            int off = center < start ? start - center : (center > end ? center - end : 0);
+            long score = Math.max(gap, 0) + 3L * off;
+            if (score < bestScore) {
+                bestScore = score;
+                best = view;
+            }
+        }
+
+        return best;
+    }
+
+    private static android.graphics.Rect screenRect(View view) {
+        int[] location = new int[2];
+        view.getLocationOnScreen(location);
+        return new android.graphics.Rect(location[0], location[1], location[0] + view.getWidth(), location[1] + view.getHeight());
     }
 
     private static boolean isDescendant(View view, View parent) {
