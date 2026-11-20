@@ -333,7 +333,10 @@ public class VideoStateController extends BasePlayerController {
             getStateService().save(new State(state.video, state.positionMs, state.durationMs, enabled ? 1.0f : lastSpeed));
         }
 
-        if (Helpers.floatEquals(lastSpeed, 1.0f) || getPlayerTweaksData().isSpeedButtonOldBehaviorEnabled()) {
+        // HomeTube: the button always opens the speed list (like YouTube). Silently switching
+        // between 1x and the last speed looked like the button did nothing.
+        if (Helpers.floatEquals(lastSpeed, 1.0f) || getPlayerTweaksData().isSpeedButtonOldBehaviorEnabled() ||
+                getContext().getResources().getBoolean(R.bool.hometube_rail_actions)) {
             onSpeedLongClicked(enabled);
         } else {
             getPlayer().setSpeed(enabled ? 1.0f : lastSpeed);
