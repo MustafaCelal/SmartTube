@@ -74,6 +74,8 @@ public class ControlButtonPresenterSelector extends PresenterSelector {
         ImageView mIcon;
         TextView mLabel;
         View mFocusableView;
+        TextView mCaption; // HomeTube: name (focused) or value (speed, quality) under the button
+        Action mAction;
 
         public ActionViewHolder(View view) {
             super(view);
@@ -95,7 +97,93 @@ public class ControlButtonPresenterSelector extends PresenterSelector {
         public ViewHolder onCreateViewHolder(ViewGroup parent) {
             View v = LayoutInflater.from(parent.getContext())
                     .inflate(mLayoutResourceId, parent, false);
+
+            if (isHomeTube(parent.getContext())) {
+                return createHomeTubeHolder(v);
+            }
+
             return new ActionViewHolder(v);
+        }
+
+        private static boolean isHomeTube(android.content.Context context) {
+            return context.getResources().getBoolean(com.liskovsoft.smartyoutubetv2.tv.R.bool.hometube_rail_actions);
+        }
+
+        /**
+         * HomeTube: white circle with a black icon on focus (like the sidebar), the button name under it.
+         */
+        private ActionViewHolder createHomeTubeHolder(View button) {
+            android.content.Context context = button.getContext();
+            float density = context.getResources().getDisplayMetrics().density;
+            int captionWidth = (int) (160 * density);
+            int captionHeight = (int) (22 * density);
+
+            android.widget.FrameLayout wrapper = new android.widget.FrameLayout(context);
+            wrapper.setClipChildren(false);
+            wrapper.setClipToPadding(false);
+            wrapper.setPadding(0, 0, 0, captionHeight);
+            wrapper.addView(button);
+
+            int buttonWidth = button.getLayoutParams() != null && button.getLayoutParams().width > 0 ?
+                    button.getLayoutParams().width : context.getResources().getDimensionPixelSize(R.dimen.lb_control_button_diameter);
+            TextView caption = new TextView(context);
+            caption.setGravity(android.view.Gravity.CENTER);
+            caption.setSingleLine(true);
+            caption.setEllipsize(TextUtils.TruncateAt.END);
+            caption.setTextSize(android.util.TypedValue.COMPLEX_UNIT_SP, 13);
+            caption.setTextColor(0xFFFFFFFF);
+            caption.setShadowLayer(4 * density, 0, 0, 0xCC000000);
+            // Wider than the button without making the button wider (negative margins)
+            android.widget.FrameLayout.LayoutParams params = new android.widget.FrameLayout.LayoutParams(
+                    captionWidth, captionHeight, android.view.Gravity.BOTTOM | android.view.Gravity.CENTER_HORIZONTAL);
+            int overhang = (captionWidth - buttonWidth) / 2;
+            params.leftMargin = -overhang;
+            params.rightMargin = -overhang;
+            params.bottomMargin = -captionHeight;
+            wrapper.addView(caption, params);
+
+            ActionViewHolder holder = new ActionViewHolder(wrapper);
+            holder.mCaption = caption;
+
+            android.graphics.drawable.GradientDrawable circle = new android.graphics.drawable.GradientDrawable();
+            circle.setShape(android.graphics.drawable.GradientDrawable.OVAL);
+            circle.setColor(0xFFFFFFFF);
+            android.graphics.drawable.StateListDrawable background = new android.graphics.drawable.StateListDrawable();
+            background.addState(new int[] {android.R.attr.state_focused}, circle);
+            background.addState(new int[] {}, new android.graphics.drawable.ColorDrawable(0));
+            if (holder.mFocusableView instanceof ImageView) {
+                ((ImageView) holder.mFocusableView).setImageDrawable(null);
+                ((ImageView) holder.mFocusableView).setScaleType(ImageView.ScaleType.FIT_XY);
+            }
+            holder.mFocusableView.setBackground(background);
+            holder.mFocusableView.setOnFocusChangeListener((v, hasFocus) -> updateHomeTubeState(holder, hasFocus));
+
+            return holder;
+        }
+
+        private static void updateHomeTubeState(ActionViewHolder holder, boolean hasFocus) {
+            if (holder.mIcon != null) {
+                boolean isBitmap = holder.mIcon.getDrawable() instanceof android.graphics.drawable.BitmapDrawable &&
+                        holder.mAction != null && holder.mAction.getId() == com.liskovsoft.smartyoutubetv2.tv.R.id.action_channel;
+                if (hasFocus && !isBitmap) {
+                    holder.mIcon.setColorFilter(0xFF000000, android.graphics.PorterDuff.Mode.SRC_IN);
+                } else {
+                    holder.mIcon.clearColorFilter();
+                }
+            }
+
+            if (holder.mCaption != null && holder.mAction != null) {
+                CharSequence name = holder.mAction.getLabel1();
+                CharSequence value = holder.mAction.getLabel2();
+                CharSequence text;
+                if (hasFocus) {
+                    text = !TextUtils.isEmpty(value) ? name + " \u00B7 " + value : name;
+                } else {
+                    text = value; // speed / quality stay visible
+                }
+                holder.mCaption.setText(text);
+                holder.mCaption.setVisibility(TextUtils.isEmpty(text) ? View.INVISIBLE : View.VISIBLE);
+            }
         }
 
         // Used inside: com.liskovsoft.smartyoutubetv2.tv.ui.mod.leanback.playerglue.tweaks.ControlBarPresenter.ViewHolder.bindControlToAction()
@@ -104,6 +192,7 @@ public class ControlButtonPresenterSelector extends PresenterSelector {
         public void onBindViewHolder(ViewHolder viewHolder, Object item) {
             Action action = (Action) item;
             ActionViewHolder vh = (ActionViewHolder) viewHolder;
+            vh.mAction = action;
 
             vh.mIcon.setImageDrawable(action.getIcon());
             if (action instanceof PaddingAction) {
@@ -127,8 +216,19 @@ public class ControlButtonPresenterSelector extends PresenterSelector {
                         AccessibilityEvent.TYPE_VIEW_ACCESSIBILITY_FOCUSED);
 
                 // MOD: enable control tooltips
-                if (tooltipsEnabled) {
+                if (tooltipsEnabled && vh.mCaption == null) {
                     TooltipCompatHandler.setTooltipText(vh.mFocusableView, action.getLabel1());
+                }
+            }
+
+            if (vh.mCaption != null) {
+                updateHomeTubeState(vh, vh.mFocusableView.hasFocus());
+                // captions are wider than buttons: don't cut them at the control bar / dock edges
+                android.view.ViewParent parent = vh.view.getParent();
+                for (int i = 0; i < 3 && parent instanceof ViewGroup; i++) {
+                    ((ViewGroup) parent).setClipChildren(false);
+                    ((ViewGroup) parent).setClipToPadding(false);
+                    parent = parent.getParent();
                 }
             }
         }

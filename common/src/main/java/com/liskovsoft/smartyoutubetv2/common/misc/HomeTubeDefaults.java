@@ -22,7 +22,7 @@ import com.liskovsoft.youtubeapi.service.internal.MediaServiceData;
 public final class HomeTubeDefaults {
     private static final String PREFS_NAME = "hometube_defaults";
     private static final String KEY_APPLIED_VERSION = "applied_version";
-    private static final int VERSION = 6;
+    private static final int VERSION = 7;
 
     private HomeTubeDefaults() {
     }
@@ -69,6 +69,11 @@ public final class HomeTubeDefaults {
         if (appliedVersion < 6) {
             // Updates: no check on start, only when the user presses Settings > Update
             new AppUpdateChecker(context, null).setUpdateCheckEnabled(false);
+        }
+
+        if (appliedVersion < 7) {
+            // Player menus (speed, quality...) open over the video instead of shrinking it
+            com.liskovsoft.smartyoutubetv2.common.prefs.PlayerTweaksData.instance(context).setDontResizeVideoToFitDialogEnabled(true);
         }
 
         prefs.edit().putInt(KEY_APPLIED_VERSION, VERSION).apply();

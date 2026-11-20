@@ -763,10 +763,14 @@ public class AppDialogUtil {
         List<OptionItem> items = new ArrayList<>();
 
         PlayerTweaksData data = PlayerTweaksData.instance(context);
-        for (float speed : data.isLongSpeedListEnabled() ? Utils.SPEED_LIST_LONG :
-                data.isExtraLongSpeedListEnabled() ? Utils.SPEED_LIST_EXTRA_LONG : Utils.SPEED_LIST_SHORT) {
+        // HomeTube: the YouTube speeds, 1x shown as "Normal"
+        boolean isHomeTube = context.getResources().getBoolean(R.bool.hometube_rail_actions);
+        float[] speeds = isHomeTube ? new float[] {0.25f, 0.5f, 0.75f, 1.0f, 1.25f, 1.5f, 1.75f, 2.0f} :
+                data.isLongSpeedListEnabled() ? Utils.SPEED_LIST_LONG :
+                data.isExtraLongSpeedListEnabled() ? Utils.SPEED_LIST_EXTRA_LONG : Utils.SPEED_LIST_SHORT;
+        for (float speed : speeds) {
             items.add(UiOptionItem.from(
-                    String.valueOf(speed),
+                    isHomeTube ? formatSpeed(context, speed) : String.valueOf(speed),
                     optionItem -> {
                         if (playbackController != null) {
                             //playerData.setSpeed(playbackController.getVideo().channelId, speed);
@@ -779,6 +783,20 @@ public class AppDialogUtil {
         }
 
         return OptionCategory.from(PLAYER_SPEED_LIST_ID, OptionCategory.TYPE_RADIO_LIST, context.getString(R.string.video_speed), items);
+    }
+
+    /**
+     * HomeTube: "Normal" for 1x, otherwise like "1.25x"
+     */
+    public static String formatSpeed(Context context, float speed) {
+        if (Helpers.floatEquals(speed, 1.0f)) {
+            return context.getString(R.string.hometube_speed_normal);
+        }
+        String value = String.valueOf(speed);
+        if (value.endsWith(".0")) {
+            value = value.substring(0, value.length() - 2);
+        }
+        return value + "x";
     }
 
     public static OptionCategory createRememberSpeedCategory(Context context) {

@@ -79,6 +79,13 @@ public class PlaybackTransportRowView extends LinearLayout {
         if (focused != null && focused.requestFocus(direction, previouslyFocusedRect)) {
             return true;
         }
+        // MOD (HomeTube): start on play/pause, so LEFT/RIGHT don't seek by surprise
+        if (getResources().getBoolean(com.liskovsoft.smartyoutubetv2.tv.R.bool.hometube_rail_actions)) {
+            View primary = findViewById(R.id.controls_dock);
+            if (primary != null && primary.requestFocus(direction, previouslyFocusedRect)) {
+                return true;
+            }
+        }
         View progress = findViewById(R.id.playback_progress);
         if (progress != null && progress.isFocusable()) {
             if (progress.requestFocus(direction, previouslyFocusedRect)) {

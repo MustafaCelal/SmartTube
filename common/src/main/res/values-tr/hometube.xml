@@ -32,4 +32,8 @@
     <string name="hometube_filter_live">Canlı</string>
     <string name="hometube_filter_channels">Kanallar</string>
     <string name="hometube_filter_playlists">Oynatma listeleri</string>
+    <string name="hometube_speed_normal">Normal</string>
+    <string name="hometube_more">Diğer</string>
+    <string name="hometube_speed">Hız</string>
+    <string name="hometube_subtitles">Altyazı</string>
 </resources>

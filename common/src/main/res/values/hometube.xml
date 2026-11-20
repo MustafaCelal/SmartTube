@@ -34,4 +34,8 @@
     <string name="hometube_filter_live">Live</string>
     <string name="hometube_filter_channels">Channels</string>
     <string name="hometube_filter_playlists">Playlists</string>
+    <string name="hometube_speed_normal">Normal</string>
+    <string name="hometube_more">More</string>
+    <string name="hometube_speed">Speed</string>
+    <string name="hometube_subtitles">Subtitles</string>
 </resources>

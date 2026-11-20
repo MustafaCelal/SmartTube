@@ -53,6 +53,16 @@ import com.liskovsoft.smartyoutubetv2.tv.ui.playback.actions.ThumbsUpAction;
 import com.liskovsoft.smartyoutubetv2.tv.ui.playback.actions.VideoSpeedAction;
 import com.liskovsoft.smartyoutubetv2.tv.ui.playback.actions.VideoStatsAction;
 import com.liskovsoft.smartyoutubetv2.tv.ui.playback.actions.VideoZoomAction;
+import com.liskovsoft.smartyoutubetv2.tv.ui.playback.actions.MoreAction;
+import com.liskovsoft.smartyoutubetv2.common.app.models.playback.manager.PlayerUI;
+import com.liskovsoft.smartyoutubetv2.common.app.models.playback.ui.OptionItem;
+import com.liskovsoft.smartyoutubetv2.common.app.models.playback.ui.UiOptionItem;
+import com.liskovsoft.smartyoutubetv2.common.app.presenters.AppDialogPresenter;
+import com.liskovsoft.smartyoutubetv2.common.utils.AppDialogUtil;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 import com.liskovsoft.smartyoutubetv2.tv.util.ViewUtil;
 
 import java.util.HashMap;
@@ -134,6 +144,86 @@ public class VideoPlayerGlue extends MaxControlsVideoPlayerGlue<PlayerAdapter> i
         putAction(new RotateAction(context));
         putAction(new FlipAction(context));
         putAction(new SoundOffAction(context));
+
+        // HomeTube: short names, shown under the focused button
+        mMoreAction = new MoreAction(context);
+        if (isHomeTube()) {
+            setLabel(R.id.action_video_speed, R.string.hometube_speed);
+            setLabel(R.id.lb_control_high_quality, R.string.hometube_quality);
+            setLabel(R.id.lb_control_closed_captioning, R.string.hometube_subtitles);
+        }
+    }
+
+    private MoreAction mMoreAction;
+    private static final Pattern RESOLUTION = Pattern.compile("(\\d{3,4}p)");
+
+    private boolean isHomeTube() {
+        return getContext() != null && getContext().getResources().getBoolean(R.bool.hometube_rail_actions);
+    }
+
+    private void setLabel(int actionId, int labelResId) {
+        Action action = mActions.get(actionId);
+        if (action != null) {
+            action.setLabel1(getContext().getString(labelResId));
+        }
+    }
+
+    /**
+     * HomeTube: the speed is shown under its button (like "1.25x") while it isn't normal
+     */
+    public void setSpeedValue(float speed) {
+        Action action = mActions.get(R.id.action_video_speed);
+        if (action == null || !isHomeTube()) {
+            return;
+        }
+        action.setLabel2(Math.abs(speed - 1.0f) < 0.01f ? null : AppDialogUtil.formatSpeed(getContext(), speed));
+        invalidateUi(action);
+    }
+
+    @Override
+    public void setQualityInfo(String info) {
+        super.setQualityInfo(info);
+
+        // HomeTube: the current resolution under the quality button (like "1080p")
+        Action action = mActions.get(R.id.lb_control_high_quality);
+        if (action == null || !isHomeTube()) {
+            return;
+        }
+        Matcher matcher = RESOLUTION.matcher(info != null ? info : "");
+        action.setLabel2(matcher.find() ? matcher.group(1) : null);
+        invalidateUi(action);
+    }
+
+    /**
+     * HomeTube: the less used actions in one menu, so the control row stays short
+     */
+    private void showMoreMenu() {
+        AppDialogPresenter dialog = AppDialogPresenter.instance(getContext());
+        List<OptionItem> items = new ArrayList<>();
+        int[] ids = {R.id.action_thumbs_up, R.id.action_thumbs_down, R.id.action_subscribe, R.id.action_channel,
+                R.id.action_playlist_add, R.id.action_playback_queue, R.id.action_repeat, R.id.action_info};
+
+        for (int id : ids) {
+            Action action = mActions.get(id);
+            if (action == null || action.getLabel1() == null) {
+                continue;
+            }
+            CharSequence title = action.getLabel1();
+            boolean isOn = (id == R.id.action_thumbs_up || id == R.id.action_thumbs_down) &&
+                    getActionIndex(action) == PlayerUI.BUTTON_ON;
+            if (id == R.id.action_subscribe) {
+                // the button label is a state ("Unsubscribed"), the menu needs what it does
+                title = getContext().getString(getActionIndex(action) == PlayerUI.BUTTON_ON ?
+                        R.string.unsubscribe_from_channel : R.string.subscribe_to_channel);
+            }
+            items.add(UiOptionItem.from(isOn ? title + "  \u2713" : title, option -> {
+                dialog.closeDialog();
+                new android.os.Handler(android.os.Looper.getMainLooper()).post(() -> dispatchAction(action));
+            }));
+        }
+
+        dialog.appendStringsCategory(getContext().getString(R.string.hometube_more), items);
+        dialog.showDialog(getContext().getString(R.string.hometube_more));
     }
 
     @Override
@@ -142,6 +232,13 @@ public class VideoPlayerGlue extends MaxControlsVideoPlayerGlue<PlayerAdapter> i
         // Will display as follows:
         // play/pause, previous, rewind, fast forward, next
         //   > /||      |<        <<        >>         >|
+        if (isHomeTube()) {
+            // HomeTube: playback on the left (like YouTube), the rest on the right (secondary)
+            super.onCreatePrimaryActions(adapter);
+            adapter.add(mSkipPreviousAction);
+            adapter.add(mSkipNextAction);
+            return;
+        }
         if (mPlayerTweaksData.isPlayerButtonEnabled(PlayerTweaksData.PLAYER_BUTTON_PLAY_PAUSE)) {
             super.onCreatePrimaryActions(adapter);
         }
@@ -199,6 +296,15 @@ public class VideoPlayerGlue extends MaxControlsVideoPlayerGlue<PlayerAdapter> i
     protected void onCreateSecondaryActions(ArrayObjectAdapter adapter) {
         // Does nothing
         super.onCreateSecondaryActions(adapter);
+
+        if (isHomeTube()) {
+            // HomeTube: subtitles, speed, quality, more (the rest is in the More menu)
+            adapter.add(mActions.get(R.id.lb_control_closed_captioning));
+            adapter.add(mActions.get(R.id.action_video_speed));
+            adapter.add(mActions.get(R.id.lb_control_high_quality));
+            adapter.add(mMoreAction);
+            return;
+        }
 
         // MAX: 7 items. But with custom modification it supports more.
         // Origin: {@link androidx.leanback.widget.ControlBarPresenter#MAX_CONTROLS}
@@ -382,6 +488,11 @@ public class VideoPlayerGlue extends MaxControlsVideoPlayerGlue<PlayerAdapter> i
     private boolean dispatchAction(Action action) {
         if (action == null) {
             return false;
+        }
+
+        if (action == mMoreAction) {
+            showMoreMenu();
+            return true;
         }
 
         if (checkShortActionDisabled(action)) {

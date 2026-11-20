@@ -863,6 +863,11 @@ public class PlaybackFragment extends SeekModePlaybackFragment implements Playba
             result = TextUtils.concat( result, " ", Video.TERTIARY_TEXT_DELIM, " ", Utils.color(getContext().getString(R.string.badge_live), ContextCompat.getColor(getContext(), R.color.red)));
         }
 
+        // HomeTube: channel, views and date only (likes and subscribers are in More > Video info)
+        if (getContext() != null && getResources().getBoolean(R.bool.hometube_rail_actions)) {
+            return result;
+        }
+
         if (getContext() != null && video.likeCount != null) {
             result = TextUtils.concat(result, " ", Video.TERTIARY_TEXT_DELIM, " ", video.likeCount, Helpers.NON_BREAKING_SPACE, Helpers.THUMB_UP); // color of thumb cannot be changed
         }
@@ -1098,6 +1103,9 @@ public class PlaybackFragment extends SeekModePlaybackFragment implements Playba
         mExoPlayerController.setSpeed(speed);
         // NOTE: Real speed isn't changed immediately, so use supplied speed data
         setButtonState(R.id.action_video_speed, speed != 1.0f ? PlayerUI.BUTTON_ON : PlayerUI.BUTTON_OFF);
+        if (mPlayerGlue != null) {
+            mPlayerGlue.setSpeedValue(speed);
+        }
     }
 
     @Override
